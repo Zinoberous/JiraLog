@@ -1,64 +1,105 @@
 # JiraLog
 
-Browser extension (Manifest V3) for **Jira Cloud**: manage day-focused worklogs. The UI is currently a **popup** with a link to the **sign-in page** (base URL + API token) and an **about page** (version, author, description).
+A lightweight browser extension for fast, day-based Jira worklog tracking.
 
-## Requirements
+The extension helps you document Jira worklogs for a selected day without repeatedly navigating through Jira issue pages.
 
-- [Node.js](https://nodejs.org/) 18+
-- Jira **Cloud** (`*.atlassian.net`)
+## Features
 
-## Development
+- Jira Cloud login with host URL, email address, and API token
+- Day-based worklog dashboard
+- Total tracked time for the selected day
+- Worklog list with issue key, title, status, Jira link, duration, comment, and delete action
+- Collapsible worklog comments for a compact UI
+- Create worklogs from a modal dialog
+- Searchable issue dropdown
+- Default issue suggestions for assigned, unresolved issues
+- Pin frequently used issues for quick access
+- Light and dark theme support
+- System theme detection
+- English and German UI
+- System language detection
+- About page with version, author, and license information
 
-```bash
-npm install
-npm run build
+## Jira API Compatibility
+
+The extension targets Jira Cloud REST API v3 and uses the current search endpoint:
+
+```http
+POST /rest/api/3/search/jql
 ```
 
-Output goes to **`dist/`**. In Chrome/Edge: **Extensions** → **Developer mode** → **Load unpacked** → select the `dist` folder.
+Worklog comments are sent as Atlassian Document Format (ADF). The current editor is intentionally simple and can be replaced by a more advanced ADF editor later.
 
-During active development:
+## Installation for Local Development
 
-```bash
-npm run dev
+1. Download or clone the repository.
+2. Open your browser extension page:
+
+```text
+chrome://extensions
 ```
 
-(Reload the extension in the browser after each build.)
+or:
 
-## Sign-in (API token)
+```text
+edge://extensions
+```
 
-1. Atlassian: [Create an API token](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/).
-2. In **extension options** (opened on first install or via the ⚙ icon in the popup): save base URL (`https://…atlassian.net`), Atlassian account email, and token.
+3. Enable Developer Mode.
+4. Click **Load unpacked**.
+5. Select the extension folder.
 
-Credentials are stored only in **`chrome.storage.local`** on this device (not synced). **OAuth 2.0 (3LO)** is planned for a later release.
+## Jira API Token
 
-## Appearance & language
+Create a Jira API token in your Atlassian account security settings.
 
-- **Theme:** choose *Auto (system)*, *Light*, or *Dark*. With *Auto*, the UI follows `prefers-color-scheme` and updates when the OS theme changes.
-- **Language:** *Auto (system)* picks German if the browser language starts with `de`, otherwise English; or fixed *Deutsch* / *English*.
+Use the following credentials in the extension settings:
 
-These settings are stored in **`chrome.storage.sync`** (with a fallback to `local` if sync is unavailable) so they can follow you across signed-in browser profiles.
+- Jira host URL, for example `https://your-company.atlassian.net`
+- Jira account email address
+- Jira API token
 
-Controls: dropdowns in the **popup**, on the **about** page, and in the top **Settings** block.
+## Permissions
 
-## Project layout
+The extension uses browser storage to save settings and pinned issues locally.
 
-| Path | Contents |
-|------|----------|
-| `src/manifest.json` | MV3 manifest; `package.json` overrides version/name/description at build time |
-| `src/popup/` | Popup UI |
-| `src/options/` | Sign-in & Jira connection |
-| `src/about/` | About page (version, author, …) |
-| `src/background/` | Service worker |
-| `src/lib/config.ts` | Read/write stored connection |
-| `src/lib/preferences.ts` | Theme and language preferences |
-| `src/lib/theme.ts` | Apply light/dark, system mode |
-| `src/lib/i18n.ts` | DE/EN strings |
-| `src/lib/ui-page.ts` | Shared theme / storage wiring |
+No data is sent to third-party services. Requests are sent only to the configured Jira host.
 
-## Version & metadata
+## International Open-Source Notes
 
-Shown on the **about** page and taken from `package.json` at build time: `version`, `author`, `description`, `displayName` (extension display name).
+The project is intended for international open-source publication. User-facing metadata and documentation should remain in English by default.
+
+Check these files before publishing:
+
+- `manifest.json`
+- `README.md`
+- browser store descriptions
+- screenshots
+- issue templates
+- pull request templates
+- changelog
+
+The UI may still support multiple languages through the built-in localization system.
+
+## Roadmap
+
+- Better Atlassian Document Format editor support
+- Worklog templates
+- Calendar overview
+- Time statistics
+- Multi-instance Jira support
+- Export functionality
+- Optional keyboard shortcuts
+
+## Contributing
+
+Issues and pull requests are welcome.
 
 ## License
 
-MIT (see [LICENSE](LICENSE)).
+MIT License
+
+## Author
+
+Alexander Karge

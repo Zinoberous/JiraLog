@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JiraLog</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">JL</div>
+        <div>
+          <div class="brand-title">JiraLog</div>
+          <div id="connectionState" class="brand-subtitle" data-i18n="disconnected">Disconnected</div>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Navigation">
+        <button id="tabWorklogs" class="tab" data-page="worklogs" title="Worklogs" hidden>⏱</button>
+        <button id="tabSettings" class="tab active" data-page="settings" title="Settings">⚙</button>
+        <button id="tabInfo" class="tab" data-page="info" title="Info">ⓘ</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="pageWorklogs" class="page" hidden>
+        <div class="toolbar">
+          <button id="createButton" class="primary-button" type="button" data-i18n="create">Create</button>
+          <label class="date-field">
+            <span class="sr-only">Date</span>
+            <input id="selectedDate" type="date" />
+          </label>
+          <div class="total-time"><span data-i18n="total">Total</span>: <strong id="totalTime">00:00</strong></div>
+        </div>
+
+        <div id="notice" class="notice hidden"></div>
+        <div id="worklogList" class="worklog-list"></div>
+      </section>
+
+      <section id="pageSettings" class="page active">
+        <form id="settingsForm" class="card form-grid">
+          <h2 data-i18n="settings">Settings</h2>
+          <label>
+            <span>Jira Host URL</span>
+            <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input id="jiraEmail" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            <span>API token</span>
+            <input id="jiraToken" type="password" autocomplete="current-password" required />
+          </label>
+          <div class="two-cols">
+            <label>
+              <span data-i18n="theme">Theme</span>
+              <select id="themeMode">
+                <option value="system">System</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="language">Language</span>
+              <select id="languageMode">
+                <option value="system">System</option>
+                <option value="de">German</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="primary-button" type="submit" data-i18n="save">Save</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="pageInfo" class="page">
+        <div class="card info-card">
+          <h2>JiraLog</h2>
+          <p><strong>Version:</strong> 0.1.0</p>
+          <p><strong>Author:</strong> Alexander Karge</p>
+          <p data-i18n="infoText">Fast day-based Jira worklog tracking from the browser popup.</p>
+          <p><strong>License:</strong> MIT</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="worklogDialog" class="modal">
+    <form id="worklogForm" method="dialog" class="modal-content">
+      <div class="modal-header">
+        <h2 data-i18n="createWorklog">Create worklog</h2>
+        <button id="closeDialogButton" class="icon-button" type="button" title="Close">✕</button>
+      </div>
+
+      <label>
+        <span data-i18n="ticket">Ticket</span>
+        <div class="ticket-select">
+          <input id="ticketSearch" type="search" placeholder="Search issues ..." autocomplete="off" />
+          <div id="ticketResults" class="ticket-results"></div>
+        </div>
+      </label>
+
+      <div id="selectedTicket" class="selected-ticket hidden"></div>
+
+      <div class="two-cols">
+        <label>
+          <span data-i18n="duration">Duration</span>
+          <input id="durationInput" type="text" placeholder="30m, 1h, 01:30" required />
+        </label>
+        <label>
+          <span data-i18n="date">Date</span>
+          <input id="worklogDate" type="date" required />
+        </label>
+      </div>
+
+      <label>
+        <span data-i18n="comment">Comment</span>
+        <div class="editor-toolbar" aria-label="Editor Toolbar">
+          <button type="button" data-command="bold"><b>B</b></button>
+          <button type="button" data-command="italic"><i>I</i></button>
+          <button type="button" data-command="underline"><u>U</u></button>
+          <button type="button" data-command="insertUnorderedList">• List</button>
+          <button type="button" data-command="formatBlock" data-value="pre">Code</button>
+          <button type="button" id="linkButton">🔗</button>
+        </div>
+        <div id="commentEditor" class="comment-editor" contenteditable="true" role="textbox"></div>
+      </label>
+
+      <div class="button-row">
+        <button id="cancelDialogButton" class="secondary-button" type="button" data-i18n="cancel">Cancel</button>
+        <button class="primary-button" type="submit" data-i18n="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="popup.js"></script>
+</body>
+</html>
