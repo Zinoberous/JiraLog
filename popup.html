@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>JiraLog</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
+
 <body>
   <div id="app" class="app">
     <header class="topbar">
@@ -17,14 +19,14 @@
         </div>
       </div>
       <nav class="tabs" aria-label="Navigation">
-        <button id="tabWorklogs" class="tab" data-page="worklogs" title="Worklogs" hidden>⏱</button>
-        <button id="tabSettings" class="tab active" data-page="settings" title="Settings">⚙</button>
+        <button id="tabWorklogs" class="tab" data-page="worklogs" title="Worklogs">⏱</button>
+        <button id="tabSettings" class="tab" data-page="settings" title="Settings">⚙</button>
         <button id="tabInfo" class="tab" data-page="info" title="Info">ⓘ</button>
       </nav>
     </header>
 
     <main>
-      <section id="pageWorklogs" class="page" hidden>
+      <section id="pageWorklogs" class="page">
         <div class="toolbar">
           <button id="createButton" class="primary-button" type="button" data-i18n="create">Create</button>
           <label class="date-field">
@@ -38,12 +40,13 @@
         <div id="worklogList" class="worklog-list"></div>
       </section>
 
-      <section id="pageSettings" class="page active">
+      <section id="pageSettings" class="page">
         <form id="settingsForm" class="card form-grid">
           <h2 data-i18n="settings">Settings</h2>
           <label>
             <span>Jira Host URL</span>
-            <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url" required />
+            <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url"
+              required />
           </label>
           <label>
             <span>Email</span>
@@ -80,7 +83,7 @@
       <section id="pageInfo" class="page">
         <div class="card info-card">
           <h2>JiraLog</h2>
-          <p><strong>Version:</strong> 0.1.0</p>
+          <p><strong>Version:</strong> 1.0.0</p>
           <p><strong>Author:</strong> Alexander Karge</p>
           <p data-i18n="infoText">Fast day-based Jira worklog tracking from the browser popup.</p>
           <p><strong>License:</strong> MIT</p>
@@ -98,45 +101,39 @@
 
       <label>
         <span data-i18n="ticket">Ticket</span>
-        <div class="ticket-select">
-          <input id="ticketSearch" type="search" placeholder="Search issues ..." autocomplete="off" />
-          <div id="ticketResults" class="ticket-results"></div>
+        <div class="ticket-select" id="ticketSelect">
+          <button id="ticketDropdownToggle" class="ticket-dropdown-button" type="button" aria-haspopup="listbox"
+            aria-expanded="false">
+            <span id="ticketDropdownLabel" data-i18n="ticket">Ticket</span>
+            <span class="ticket-dropdown-caret" aria-hidden="true">▾</span>
+          </button>
+          <div id="ticketDropdownPanel" class="ticket-dropdown-panel hidden">
+            <div class="ticket-search-row">
+              <input id="ticketSearch" type="search" autocomplete="off" />
+            </div>
+            <div id="ticketResults" class="ticket-results" role="listbox"></div>
+          </div>
         </div>
       </label>
 
-      <div id="selectedTicket" class="selected-ticket hidden"></div>
-
-      <div class="two-cols">
-        <label>
-          <span data-i18n="duration">Duration</span>
-          <input id="durationInput" type="text" placeholder="30m, 1h, 01:30" required />
-        </label>
-        <label>
-          <span data-i18n="date">Date</span>
-          <input id="worklogDate" type="date" required />
-        </label>
-      </div>
+      <label>
+        <span data-i18n="duration">Duration</span>
+        <input id="durationInput" type="text" placeholder="30m, 1h, 01:30" required />
+      </label>
 
       <label>
         <span data-i18n="comment">Comment</span>
-        <div class="editor-toolbar" aria-label="Editor Toolbar">
-          <button type="button" data-command="bold"><b>B</b></button>
-          <button type="button" data-command="italic"><i>I</i></button>
-          <button type="button" data-command="underline"><u>U</u></button>
-          <button type="button" data-command="insertUnorderedList">• List</button>
-          <button type="button" data-command="formatBlock" data-value="pre">Code</button>
-          <button type="button" id="linkButton">🔗</button>
-        </div>
-        <div id="commentEditor" class="comment-editor" contenteditable="true" role="textbox"></div>
+        <textarea id="commentEditor" class="comment-editor" rows="6" spellcheck="true"></textarea>
       </label>
 
       <div class="button-row">
         <button id="cancelDialogButton" class="secondary-button" type="button" data-i18n="cancel">Cancel</button>
-        <button class="primary-button" type="submit" data-i18n="save">Save</button>
+        <button id="saveWorklogButton" class="primary-button" type="submit" data-i18n="save" disabled>Save</button>
       </div>
     </form>
   </dialog>
 
   <script src="popup.js"></script>
 </body>
+
 </html>

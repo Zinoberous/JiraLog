@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "JiraLog",
   "description": "Fast day-based Jira worklog tracking directly from your browser popup.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "action": {
     "default_title": "JiraLog",
     "default_popup": "popup.html",

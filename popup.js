@@ -53,7 +53,8 @@ const i18n = {
     noComment: "Kein Kommentar",
     noTickets: "Keine Tickets gefunden.",
     pin: "Anpinnen",
-    selectTicket: "Bitte ein Ticket auswählen."
+    selectTicket: "Bitte ein Ticket auswählen.",
+    searchTickets: "Tickets suchen ..."
   },
   en: {
     create: "Create",
@@ -84,7 +85,8 @@ const i18n = {
     noComment: "No comment",
     noTickets: "No issues found.",
     pin: "Pin",
-    selectTicket: "Please select an issue."
+    selectTicket: "Please select an issue.",
+    searchTickets: "Search issues ..."
   }
 };
 
@@ -106,7 +108,60 @@ function applyLanguage() {
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
   });
+  updateTicketSearchPlaceholder();
   updateConnectionState();
+  rerenderLocalizedDynamicContent();
+}
+
+function updateTicketSearchPlaceholder() {
+  const searchInput = $("ticketSearch");
+  if (searchInput) {
+    searchInput.placeholder = t("searchTickets");
+  }
+}
+
+function setTicketDropdownLabel(issue = null) {
+  const label = $("ticketDropdownLabel");
+  if (!label) {
+    return;
+  }
+
+  if (!issue) {
+    label.textContent = t("ticket");
+    return;
+  }
+
+  const summary = issue.fields?.summary ?? issue.summary ?? "";
+  label.textContent = `${issue.key} - ${summary}`;
+}
+
+function openTicketDropdown() {
+  const panel = $("ticketDropdownPanel");
+  const toggle = $("ticketDropdownToggle");
+  panel.classList.remove("hidden");
+  toggle.setAttribute("aria-expanded", "true");
+  loadTicketSuggestions($("ticketSearch").value);
+  $("ticketSearch").focus();
+}
+
+function closeTicketDropdown() {
+  const panel = $("ticketDropdownPanel");
+  const toggle = $("ticketDropdownToggle");
+  panel.classList.add("hidden");
+  toggle.setAttribute("aria-expanded", "false");
+}
+
+function rerenderLocalizedDynamicContent() {
+  if (state.isConnected) {
+    renderWorklogs(state.worklogs);
+  }
+
+  setTicketDropdownLabel(state.selectedIssue);
+
+  const ticketDropdownPanel = $("ticketDropdownPanel");
+  if (ticketDropdownPanel && !ticketDropdownPanel.classList.contains("hidden")) {
+    renderTicketResults(state.cachedIssues);
+  }
 }
 
 function updateConnectionState() {
@@ -228,6 +283,41 @@ function parseDurationToSeconds(value) {
   throw new Error(t("invalidDuration"));
 }
 
+function isDurationValid() {
+  const durationInput = $("durationInput");
+  if (!durationInput) {
+    return false;
+  }
+
+  const value = durationInput.value.trim();
+  if (!value) {
+    return false;
+  }
+
+  try {
+    return parseDurationToSeconds(value) > 0;
+  } catch {
+    return false;
+  }
+}
+
+function updateWorklogFormValidity() {
+  const durationInput = $("durationInput");
+  const saveButton = $("saveWorklogButton");
+  if (!durationInput || !saveButton) {
+    return;
+  }
+
+  const hasIssue = Boolean(state.selectedIssue);
+  const durationValue = durationInput.value.trim();
+  const validDuration = isDurationValid();
+  const canSave = hasIssue && validDuration;
+
+  saveButton.disabled = !canSave;
+  durationInput.classList.toggle("invalid", durationValue.length > 0 && !validDuration);
+  durationInput.setAttribute("aria-invalid", durationValue.length > 0 && !validDuration ? "true" : "false");
+}
+
 function selectedDayRange() {
   const start = new Date(`${state.selectedDate}T00:00:00`);
   const end = new Date(start);
@@ -243,12 +333,6 @@ function jiraStartedAt(date) {
   const hh = String(Math.floor(abs / 60)).padStart(2, "0");
   const mm = String(abs % 60).padStart(2, "0");
   return `${date}T09:00:00.000${sign}${hh}${mm}`;
-}
-
-function htmlToText(html) {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div.innerText.trim();
 }
 
 function textToAdf(text) {
@@ -288,6 +372,107 @@ function adfToText(doc) {
   return lines.join("").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function sanitizeLinkHref(rawHref) {
+  if (typeof rawHref !== "string") {
+    return null;
+  }
+
+  const href = rawHref.trim();
+  if (!href) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(href, "https://example.invalid");
+    const protocol = parsed.protocol.toLowerCase();
+    if (protocol === "http:" || protocol === "https:" || protocol === "mailto:") {
+      return href;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function applyAdfMarks(text, marks = []) {
+  return marks.reduce((html, mark) => {
+    const type = mark?.type;
+    if (type === "strong") {
+      return `<strong>${html}</strong>`;
+    }
+    if (type === "em") {
+      return `<em>${html}</em>`;
+    }
+    if (type === "underline") {
+      return `<u>${html}</u>`;
+    }
+    if (type === "strike") {
+      return `<s>${html}</s>`;
+    }
+    if (type === "code") {
+      return `<code>${html}</code>`;
+    }
+    if (type === "link") {
+      const safeHref = sanitizeLinkHref(mark?.attrs?.href);
+      if (!safeHref) {
+        return html;
+      }
+      return `<a href="${escapeHtml(safeHref)}" target="_blank" rel="noopener noreferrer">${html}</a>`;
+    }
+    return html;
+  }, text);
+}
+
+function renderAdfNode(node) {
+  if (!node) {
+    return "";
+  }
+
+  const children = Array.isArray(node.content) ? node.content.map(renderAdfNode).join("") : "";
+
+  switch (node.type) {
+    case "doc":
+      return children;
+    case "paragraph":
+      return `<p>${children || "<br>"}</p>`;
+    case "text": {
+      const escaped = escapeHtml(node.text ?? "");
+      return applyAdfMarks(escaped, node.marks);
+    }
+    case "hardBreak":
+      return "<br>";
+    case "bulletList":
+      return `<ul>${children}</ul>`;
+    case "orderedList":
+      return `<ol>${children}</ol>`;
+    case "listItem":
+      return `<li>${children}</li>`;
+    case "blockquote":
+      return `<blockquote>${children}</blockquote>`;
+    case "codeBlock":
+      return `<pre><code>${children}</code></pre>`;
+    case "heading": {
+      const level = Number(node?.attrs?.level);
+      const safeLevel = Number.isInteger(level) && level >= 1 && level <= 6 ? level : 3;
+      return `<h${safeLevel}>${children}</h${safeLevel}>`;
+    }
+    default:
+      return children;
+  }
+}
+
+function adfToHtml(doc) {
+  if (!doc) {
+    return "";
+  }
+
+  if (typeof doc === "string") {
+    return escapeHtml(doc).replace(/\n/g, "<br>");
+  }
+
+  return renderAdfNode(doc).trim();
+}
+
 async function loadState() {
   const data = await storage.get(defaults);
   state.settings = { ...defaults.settings, ...(data.settings ?? {}) };
@@ -300,7 +485,6 @@ async function loadState() {
   $("themeMode").value = state.settings.themeMode;
   $("languageMode").value = state.settings.languageMode;
   $("selectedDate").value = state.selectedDate;
-  $("worklogDate").value = state.selectedDate;
 }
 
 async function saveSettings() {
@@ -338,8 +522,8 @@ function updateNavigation() {
   const worklogPage = $("pageWorklogs");
 
   if (!state.isConnected) {
-    worklogTab.hidden = true;
-    worklogPage.hidden = true;
+    worklogTab.classList.add("hidden");
+    worklogPage.classList.add("hidden");
 
     if (worklogPage.classList.contains("active")) {
       setPage("settings");
@@ -348,8 +532,8 @@ function updateNavigation() {
     return;
   }
 
-  worklogTab.hidden = false;
-  worklogPage.hidden = false;
+  worklogTab.classList.remove("hidden");
+  worklogPage.classList.remove("hidden");
 }
 
 async function testLogin(showResult = true) {
@@ -426,7 +610,7 @@ function renderWorklogs(worklogs) {
     const status = issue.fields.status?.name ?? "";
     const statusClass = status.toLowerCase().includes("done") || status.toLowerCase().includes("erledigt") ? "done" : status.toLowerCase().includes("progress") || status.toLowerCase().includes("running") ? "progress" : "";
     const url = `${normalizeHost(state.settings.jiraHost)}/browse/${issue.key}`;
-    const comment = adfToText(worklog.comment);
+    const commentHtml = adfToHtml(worklog.comment);
     return `
       <article class="worklog-card" data-index="${index}">
         <div class="worklog-row">
@@ -440,7 +624,7 @@ function renderWorklogs(worklogs) {
           </div>
         </div>
         <div class="comment-panel hidden">
-          <div class="comment-text">${escapeHtml(comment).replace(/\n/g, "<br>") || "<em>${t('noComment')}</em>"}</div>
+          <div class="comment-text">${commentHtml || `<em>${t("noComment")}</em>`}</div>
         </div>
       </article>`;
   }).join("");
@@ -459,13 +643,13 @@ async function deleteWorklog(index) {
 
 function openCreateDialog() {
   state.selectedIssue = null;
-  $("worklogDate").value = state.selectedDate;
-  $("durationInput").value = "30m";
-  $("commentEditor").innerHTML = "";
+  setTicketDropdownLabel();
   $("ticketSearch").value = "";
-  $("selectedTicket").classList.add("hidden");
+  $("durationInput").value = "30m";
+  $("commentEditor").value = "";
+  closeTicketDropdown();
   $("worklogDialog").showModal();
-  loadTicketSuggestions("");
+  updateWorklogFormValidity();
 }
 
 async function loadTicketSuggestions(query) {
@@ -504,15 +688,17 @@ async function searchIssues(query) {
 
 function renderTicketResults(issues) {
   if (issues.length === 0) {
-    $("ticketResults").innerHTML = `<div class="ticket-item">${t("noTickets")}</div>`;
+    $("ticketResults").innerHTML = `<div class="ticket-empty">${t("noTickets")}</div>`;
     return;
   }
 
   $("ticketResults").innerHTML = issues.map((issue, index) => `
     <button class="ticket-item" type="button" data-index="${index}">
-      <span class="issue-key">${escapeHtml(issue.key)}</span>
-      <span>${escapeHtml(issue.fields?.summary ?? issue.summary ?? "")}</span>
-      <span class="status">${escapeHtml(issue.fields?.status?.name ?? issue.status ?? "")}</span>
+      <span class="ticket-item-main">
+        <span class="issue-key">${escapeHtml(issue.key)}</span>
+        <span class="ticket-item-summary">${escapeHtml(issue.fields?.summary ?? issue.summary ?? "")}</span>
+      </span>
+      <span class="ticket-item-status">${escapeHtml(issue.fields?.status?.name ?? issue.status ?? "")}</span>
       <span class="pin-button ${issue.pinned ? "pinned" : ""}" data-pin-index="${index}" title="${t('pin')}">★</span>
     </button>`).join("");
 }
@@ -531,40 +717,47 @@ async function togglePinned(issue) {
     });
   }
   await storage.set({ pinnedIssues: state.pinnedIssues });
-  await loadTicketSuggestions($("ticketSearch").value);
+  await loadTicketSuggestions($("ticketSearch")?.value ?? "");
 }
 
 function selectIssue(issue) {
   state.selectedIssue = issue;
-  const selected = $("selectedTicket");
-  selected.innerHTML = `<strong>${escapeHtml(issue.key)}</strong> - ${escapeHtml(issue.fields?.summary ?? "")}`;
-  selected.classList.remove("hidden");
+  setTicketDropdownLabel(issue);
+  closeTicketDropdown();
+  updateWorklogFormValidity();
 }
 
 async function createWorklog(event) {
   event.preventDefault();
-  if (!state.selectedIssue) {
+  const hasIssue = Boolean(state.selectedIssue);
+  const validDuration = isDurationValid();
+  if (!hasIssue) {
     showNotice(t("selectTicket"), true);
+    updateWorklogFormValidity();
+    return;
+  }
+
+  if (!validDuration) {
+    showNotice(t("invalidDuration"), true);
+    updateWorklogFormValidity();
     return;
   }
 
   const seconds = parseDurationToSeconds($("durationInput").value);
-  const text = htmlToText($("commentEditor").innerHTML);
+  const text = $("commentEditor").value.trim();
   await jiraFetch(`/rest/api/3/issue/${state.selectedIssue.key}/worklog`, {
     method: "POST",
     body: JSON.stringify({
-      started: jiraStartedAt($("worklogDate").value),
+      started: jiraStartedAt(state.selectedDate),
       timeSpentSeconds: seconds,
       comment: textToAdf(text)
     })
   });
 
-  $("worklogDialog").close();
-  state.selectedDate = $("worklogDate").value;
-  $("selectedDate").value = state.selectedDate;
-  await storage.set({ selectedDate: state.selectedDate });
+  $('worklogDialog').close();
   showNotice(t("saved"));
   await loadWorklogs();
+  updateWorklogFormValidity();
 }
 
 function setupEvents() {
@@ -599,11 +792,36 @@ function setupEvents() {
   $("closeDialogButton").addEventListener("click", () => $("worklogDialog").close());
   $("cancelDialogButton").addEventListener("click", () => $("worklogDialog").close());
   $("worklogForm").addEventListener("submit", createWorklog);
+  $("durationInput").addEventListener("input", updateWorklogFormValidity);
 
   let searchTimeout;
+  $("ticketDropdownToggle").addEventListener("click", (e) => {
+    e.preventDefault();
+    const panel = $("ticketDropdownPanel");
+    if (panel.classList.contains("hidden")) {
+      openTicketDropdown();
+    } else {
+      closeTicketDropdown();
+    }
+  });
+
   $("ticketSearch").addEventListener("input", () => {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => loadTicketSuggestions($("ticketSearch").value), 300);
+    searchTimeout = setTimeout(() => loadTicketSuggestions($("ticketSearch").value), 180);
+  });
+
+  document.addEventListener("click", (e) => {
+    const ticketSelect = $("ticketSelect");
+    if (ticketSelect && !ticketSelect.contains(e.target)) {
+      closeTicketDropdown();
+    }
+  });
+
+  $("ticketSearch").addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeTicketDropdown();
+      $("ticketDropdownToggle").focus();
+    }
   });
 
   $("ticketResults").addEventListener("click", async (event) => {
@@ -631,20 +849,6 @@ function setupEvents() {
     }
   });
 
-  document.querySelectorAll("[data-command]").forEach(button => {
-    button.addEventListener("click", () => {
-      document.execCommand(button.dataset.command, false, button.dataset.value ?? null);
-      $("commentEditor").focus();
-    });
-  });
-
-  $("linkButton").addEventListener("click", () => {
-    const url = prompt("URL");
-    if (url) {
-      document.execCommand("createLink", false, url);
-    }
-  });
-
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme);
 }
 
@@ -654,14 +858,17 @@ async function init() {
   applyLanguage();
   setupEvents();
   updateNavigation();
-  setPage("settings");
 
   if (hasCredentials()) {
     const connected = await testLogin(false);
     if (connected) {
       setPage("worklogs");
       await loadWorklogs();
+    } else {
+      setPage("settings");
     }
+  } else {
+    setPage("settings");
   }
 }
 
