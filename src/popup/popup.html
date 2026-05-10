@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JiraLog</title>
+    <link rel="stylesheet" href="../styles/shared.css" />
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <div class="popup">
+      <section class="popup__prefs" id="popup-prefs-section">
+        <div class="popup__pref-row">
+          <label class="pref-label popup__pref-label" for="popup-pref-theme" id="popup-label-theme"></label>
+          <select id="popup-pref-theme" class="pref-control popup__pref-control">
+            <option value="system"></option>
+            <option value="light"></option>
+            <option value="dark"></option>
+          </select>
+        </div>
+        <div class="popup__pref-row">
+          <label class="pref-label popup__pref-label" for="popup-pref-locale" id="popup-label-locale"></label>
+          <select id="popup-pref-locale" class="pref-control popup__pref-control">
+            <option value="system"></option>
+            <option value="de"></option>
+            <option value="en"></option>
+          </select>
+        </div>
+      </section>
+
+      <header class="popup__header">
+        <p class="popup__total" id="total-time"></p>
+        <div class="popup__actions">
+          <button type="button" class="btn btn-ghost" id="btn-about"></button>
+          <button type="button" class="btn btn-ghost" id="btn-settings">⚙</button>
+        </div>
+      </header>
+      <p class="muted popup__hint" id="hint"></p>
+      <main class="popup__main" id="main">
+        <p class="muted" id="main-placeholder"></p>
+      </main>
+    </div>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

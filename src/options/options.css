@@ -1,0 +1,92 @@
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.page__prefs {
+  margin-bottom: 26px;
+}
+
+.section-title {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.pref-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  align-self: center;
+}
+
+.pref-control {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.pref-control:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.page__header {
+  margin-bottom: 22px;
+}
+
+.page__title {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 0.25rem;
+}
+
+.form-message {
+  margin: 0;
+  min-height: 1.35em;
+  font-size: 13px;
+}
+
+.form-message--ok {
+  color: #16a34a;
+}
+
+html[data-theme="dark"] .form-message--ok {
+  color: #4ade80;
+}
+
+.form-message--err {
+  color: #dc2626;
+}
+
+html[data-theme="dark"] .form-message--err {
+  color: #f87171;
+}
+
+.page__footer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.page__footer a {
+  font-size: 13px;
+}
