@@ -122,17 +122,88 @@ function updateTicketSearchPlaceholder() {
 
 function setTicketDropdownLabel(issue = null) {
   const label = $("ticketDropdownLabel");
+  const typeIcon = $("ticketDropdownTypeIcon");
   if (!label) {
     return;
   }
 
   if (!issue) {
     label.textContent = t("ticket");
+    if (typeIcon) {
+      typeIcon.hidden = true;
+      typeIcon.src = "";
+      typeIcon.alt = "";
+      typeIcon.title = "";
+    }
     return;
   }
 
   const summary = issue.fields?.summary ?? issue.summary ?? "";
   label.textContent = `${issue.key} - ${summary}`;
+
+  if (typeIcon) {
+    const issueType = getIssueTypeInfo(issue);
+    if (issueType.iconUrl) {
+      typeIcon.hidden = false;
+      typeIcon.src = issueType.iconUrl;
+      typeIcon.alt = issueType.name;
+      typeIcon.title = issueType.name;
+    } else {
+      typeIcon.hidden = true;
+      typeIcon.src = "";
+      typeIcon.alt = "";
+      typeIcon.title = "";
+    }
+  }
+}
+
+function getIssueTypeInfo(issue) {
+  const issueType = issue?.fields?.issuetype ?? issue?.issuetype ?? null;
+  return {
+    name: issueType?.name ?? "",
+    iconUrl: issueType?.iconUrl ?? ""
+  };
+}
+
+function materialIcon(iconId, className = "mi") {
+  return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true"><use href="#${iconId}" /></svg>`;
+}
+
+function getJiraStatusPalette(status) {
+  const colorName = String(status?.statusCategory?.colorName ?? "").toLowerCase();
+  const categoryKey = String(status?.statusCategory?.key ?? "").toLowerCase();
+
+  const palettes = {
+    "medium-gray": { bg: "#DFE1E6", fg: "#172B4D", border: "#C1C7D0" },
+    "green": { bg: "#E3FCEF", fg: "#006644", border: "#ABF5D1" },
+    "yellow": { bg: "#FFFAE6", fg: "#7A5D00", border: "#FFE380" },
+    "brown": { bg: "#FFEBE6", fg: "#BF2600", border: "#FFBDAD" },
+    "warm-red": { bg: "#FFEBE6", fg: "#BF2600", border: "#FF8F73" },
+    "blue-gray": { bg: "#DFE1E6", fg: "#42526E", border: "#C1C7D0" },
+    "blue": { bg: "#DEEBFF", fg: "#0747A6", border: "#B3D4FF" }
+  };
+
+  if (categoryKey === "indeterminate") {
+    return palettes.blue;
+  }
+
+  if (palettes[colorName]) {
+    return palettes[colorName];
+  }
+
+  if (categoryKey === "done") {
+    return palettes.green;
+  }
+  if (categoryKey === "new") {
+    return palettes["medium-gray"];
+  }
+
+  return palettes.blue;
+}
+
+function getJiraStatusStyle(status) {
+  const palette = getJiraStatusPalette(status);
+  return `background:${palette.bg};color:${palette.fg};border-color:${palette.border};`;
 }
 
 function openTicketDropdown() {
@@ -568,7 +639,7 @@ async function loadWorklogs() {
     }
 
     const jql = `worklogAuthor = currentUser() AND worklogDate = "${state.selectedDate}" ORDER BY updated DESC`;
-    const data = await jiraSearch(jql, ["summary", "status", "worklog"], 50);
+    const data = await jiraSearch(jql, ["summary", "status", "worklog", "issuetype"], 50);
     const { start, end } = selectedDayRange();
     const worklogs = [];
 
@@ -607,20 +678,29 @@ function renderWorklogs(worklogs) {
   $("worklogList").innerHTML = worklogs.map((item, index) => {
     const issue = item.issue;
     const worklog = item.worklog;
-    const status = issue.fields.status?.name ?? "";
-    const statusClass = status.toLowerCase().includes("done") || status.toLowerCase().includes("erledigt") ? "done" : status.toLowerCase().includes("progress") || status.toLowerCase().includes("running") ? "progress" : "";
+    const statusData = issue.fields.status ?? null;
+    const status = statusData?.name ?? "";
+    const statusStyle = getJiraStatusStyle(statusData);
     const url = `${normalizeHost(state.settings.jiraHost)}/browse/${issue.key}`;
+    const commentText = adfToText(worklog.comment);
+    const hasComment = commentText.trim().length > 0;
+    const commentIcon = hasComment ? materialIcon("mi-comment") : materialIcon("mi-mode-comment");
+    const commentClass = hasComment ? "has-comment" : "no-comment";
     const commentHtml = adfToHtml(worklog.comment);
+    const issueType = getIssueTypeInfo(issue);
+    const issueTypeIcon = issueType.iconUrl
+      ? `<img class="ticket-item-type-icon" src="${escapeHtml(issueType.iconUrl)}" alt="${escapeHtml(issueType.name)}" title="${escapeHtml(issueType.name)}" loading="lazy" referrerpolicy="no-referrer" />`
+      : "";
     return `
       <article class="worklog-card" data-index="${index}">
         <div class="worklog-row">
-          <div class="issue-title" title="${escapeHtml(issue.key)} - ${escapeHtml(issue.fields.summary ?? "")}"><span class="issue-key">${escapeHtml(issue.key)}</span> - ${escapeHtml(issue.fields.summary ?? "")}</div>
-          <div class="status ${statusClass}">${escapeHtml(status)}</div>
-          <a class="icon-button" href="${url}" target="_blank" title="${t('openJira')}">↗</a>
+          <div class="issue-title" title="${escapeHtml(issue.key)} - ${escapeHtml(issue.fields.summary ?? "")}">${issueTypeIcon}<span class="issue-key">${escapeHtml(issue.key)}</span> - ${escapeHtml(issue.fields.summary ?? "")}</div>
+          <div class="status" style="${statusStyle}">${escapeHtml(status)}</div>
+          <a class="icon-button" href="${url}" target="_blank" title="${t('openJira')}" aria-label="${t('openJira')}">${materialIcon("mi-open-in-new")}</a>
           <div class="duration">${secondsToTime(worklog.timeSpentSeconds ?? 0)}</div>
           <div class="actions">
-            <button class="icon-button toggle-comment" type="button" title="${t('comment')}">💬</button>
-            <button class="icon-button delete-worklog" type="button" title="${t('delete')}">🗑</button>
+            <button class="icon-button toggle-comment ${commentClass}" type="button" title="${t('comment')}" aria-label="${t('comment')}">${commentIcon}</button>
+            <button class="icon-button delete-worklog" type="button" title="${t('delete')}" aria-label="${t('delete')}">${materialIcon("mi-delete")}</button>
           </div>
         </div>
         <div class="comment-panel hidden">
@@ -676,14 +756,17 @@ async function searchIssues(query) {
     jql = `(issuekey = "${safe}" OR text ~ "${safe}*") AND statusCategory != Done ORDER BY updated DESC`;
   }
 
-  const data = await jiraSearch(jql, ["summary", "status"], 25);
+  const data = await jiraSearch(jql, ["summary", "status", "issuetype"], 25);
   const issues = data.issues ?? [];
   const pinnedKeys = new Set(state.pinnedIssues.map(issue => issue.key));
   const combined = [
     ...state.pinnedIssues.filter(p => !issues.some(i => i.key === p.key)),
     ...issues
   ];
-  return combined.map(issue => ({ ...issue, pinned: pinnedKeys.has(issue.key) }));
+  const mapped = combined.map(issue => ({ ...issue, pinned: pinnedKeys.has(issue.key) }));
+  const pinned = mapped.filter(issue => issue.pinned);
+  const unpinned = mapped.filter(issue => !issue.pinned);
+  return [...pinned, ...unpinned];
 }
 
 function renderTicketResults(issues) {
@@ -692,15 +775,25 @@ function renderTicketResults(issues) {
     return;
   }
 
-  $("ticketResults").innerHTML = issues.map((issue, index) => `
+  $("ticketResults").innerHTML = issues.map((issue, index) => {
+    const issueType = getIssueTypeInfo(issue);
+    const iconUrl = escapeHtml(issueType.iconUrl);
+    const iconName = escapeHtml(issueType.name);
+    const iconHidden = issueType.iconUrl ? "" : "hidden";
+    const pinIcon = issue.pinned ? materialIcon("mi-star") : materialIcon("mi-star-outline");
+    const statusData = issue.fields?.status ?? null;
+    const statusStyle = getJiraStatusStyle(statusData);
+    return `
     <button class="ticket-item" type="button" data-index="${index}">
       <span class="ticket-item-main">
+        <img class="ticket-item-type-icon" src="${iconUrl}" alt="${iconName}" title="${iconName}" loading="lazy" referrerpolicy="no-referrer" ${iconHidden} />
         <span class="issue-key">${escapeHtml(issue.key)}</span>
         <span class="ticket-item-summary">${escapeHtml(issue.fields?.summary ?? issue.summary ?? "")}</span>
       </span>
-      <span class="ticket-item-status">${escapeHtml(issue.fields?.status?.name ?? issue.status ?? "")}</span>
-      <span class="pin-button ${issue.pinned ? "pinned" : ""}" data-pin-index="${index}" title="${t('pin')}">★</span>
-    </button>`).join("");
+      <span class="ticket-item-status" style="${statusStyle}">${escapeHtml(issue.fields?.status?.name ?? issue.status ?? "")}</span>
+      <span class="pin-button ${issue.pinned ? "pinned" : ""}" data-pin-index="${index}" title="${t('pin')}">${pinIcon}</span>
+    </button>`;
+  }).join("");
 }
 
 async function togglePinned(issue) {
@@ -712,7 +805,8 @@ async function togglePinned(issue) {
       key: issue.key,
       fields: {
         summary: issue.fields?.summary ?? issue.summary ?? "",
-        status: issue.fields?.status ?? { name: issue.status ?? "" }
+        status: issue.fields?.status ?? { name: issue.status ?? "" },
+        issuetype: issue.fields?.issuetype ?? issue.issuetype ?? null
       }
     });
   }
