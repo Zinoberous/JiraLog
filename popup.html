@@ -50,52 +50,72 @@
       </section>
 
       <section id="pageSettings" class="page">
-        <form id="settingsForm" class="card form-grid">
-          <h2 data-i18n="settings">Settings</h2>
-          <label>
-            <span>Jira Host URL</span>
-            <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url"
-              required />
-          </label>
-          <label>
-            <span>Email</span>
-            <input id="jiraEmail" type="email" autocomplete="username" required />
-          </label>
-          <label>
-            <span>API token</span>
-            <input id="jiraToken" type="password" autocomplete="current-password" required />
-          </label>
-          <div class="two-cols">
+        <div class="settings-layout">
+          <form id="settingsForm" class="card form-grid settings-card">
+            <h2 data-i18n="jiraAccess">Jira Access</h2>
             <label>
-              <span data-i18n="theme">Theme</span>
-              <select id="themeMode">
-                <option value="system">System</option>
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-              </select>
+              <span>Jira Host URL</span>
+              <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url"
+                required />
             </label>
             <label>
-              <span data-i18n="language">Language</span>
-              <select id="languageMode">
-                <option value="system">System</option>
-                <option value="de">German</option>
-                <option value="en">English</option>
-              </select>
+              <span>Email</span>
+              <input id="jiraEmail" type="email" autocomplete="username" required />
             </label>
-          </div>
-          <div class="button-row">
-            <button class="primary-button" type="submit" data-i18n="save">Save</button>
-          </div>
-        </form>
+            <label>
+              <span>API-Token</span>
+              <input id="jiraToken" type="password" autocomplete="current-password" required />
+            </label>
+            <div class="button-row">
+              <button class="primary-button" type="submit" data-i18n="saveAccess">Save Access</button>
+            </div>
+          </form>
+
+          <section class="card form-grid settings-card" aria-label="Preferences">
+            <h2 data-i18n="preferences">Preferences</h2>
+            <div class="two-cols">
+              <label>
+                <span data-i18n="theme">Theme</span>
+                <select id="themeMode">
+                  <option value="system">System</option>
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="language">Language</span>
+                <select id="languageMode">
+                  <option value="system">System</option>
+                  <option value="de">German</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section id="pageInfo" class="page">
-        <div class="card info-card">
-          <h2>JiraLog</h2>
-          <p><strong>Version:</strong> 1.0.0</p>
-          <p><strong>Author:</strong> Alexander Karge</p>
-          <p data-i18n="infoText">Fast day-based Jira worklog tracking from the browser popup.</p>
-          <p><strong>License:</strong> MIT</p>
+        <div class="info-container">
+          <div class="info-content">
+            <h1 class="info-title">JiraLog</h1>
+            <p class="info-version">v1.0.0</p>
+
+            <p class="info-description" data-i18n="infoText">Fast day-based Jira worklog tracking from the browser
+              popup.</p>
+
+            <div class="info-links">
+              <!-- <a href="https://github.com/zinoberous/jiralog/releases" target="_blank" class="info-link"
+                data-i18n="downloadLatest">Download Latest Version</a> -->
+              <a href="https://github.com/zinoberous/jiralog/issues" target="_blank" class="info-link"
+                data-i18n="reportIssue">Report an issue</a>
+            </div>
+          </div>
+
+          <footer class="info-footer">
+            <p class="footer-credit" data-i18n="createdBy">Created by Alexander Karge</p>
+            <p class="footer-copyright">&copy; 2026 All Rights Reserved.</p>
+          </footer>
         </div>
       </section>
     </main>

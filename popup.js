@@ -28,6 +28,9 @@ const i18n = {
     create: "Erstellen",
     total: "Gesamt",
     settings: "Einstellungen",
+    jiraAccess: "Jira-Zugang",
+    saveAccess: "Zugang speichern",
+    preferences: "Darstellung und Sprache",
     theme: "Theme",
     language: "Sprache",
     save: "Speichern",
@@ -54,12 +57,20 @@ const i18n = {
     noTickets: "Keine Tickets gefunden.",
     pin: "Anpinnen",
     selectTicket: "Bitte ein Ticket auswählen.",
-    searchTickets: "Tickets suchen ..."
+    searchTickets: "Tickets suchen ...",
+    version: "Version",
+    downloadLatest: "Neueste Version herunterladen",
+    reportIssue: "Ein Problem melden",
+    backToTickets: "Zurück zu Tickets",
+    createdBy: "Erstellt von Alexander Karge"
   },
   en: {
     create: "Create",
     total: "Total",
     settings: "Settings",
+    jiraAccess: "Jira Access",
+    saveAccess: "Save Access",
+    preferences: "Preferences",
     theme: "Theme",
     language: "Language",
     save: "Save",
@@ -86,7 +97,12 @@ const i18n = {
     noTickets: "No issues found.",
     pin: "Pin",
     selectTicket: "Please select an issue.",
-    searchTickets: "Search issues ..."
+    searchTickets: "Search issues ...",
+    version: "Version",
+    downloadLatest: "Download Latest Version",
+    reportIssue: "Report an issue",
+    backToTickets: "Back to Tickets",
+    createdBy: "Created by Alexander Karge"
   }
 };
 
@@ -123,12 +139,18 @@ function updateTicketSearchPlaceholder() {
 function setTicketDropdownLabel(issue = null) {
   const label = $("ticketDropdownLabel");
   const typeIcon = $("ticketDropdownTypeIcon");
+  const toggle = $("ticketDropdownToggle");
   if (!label) {
     return;
   }
 
   if (!issue) {
-    label.textContent = t("ticket");
+    const placeholder = t("ticket");
+    label.textContent = placeholder;
+    label.title = placeholder;
+    if (toggle) {
+      toggle.title = placeholder;
+    }
     if (typeIcon) {
       typeIcon.hidden = true;
       typeIcon.src = "";
@@ -139,7 +161,12 @@ function setTicketDropdownLabel(issue = null) {
   }
 
   const summary = issue.fields?.summary ?? issue.summary ?? "";
-  label.textContent = `${issue.key} - ${summary}`;
+  const fullLabel = `${issue.key} - ${summary}`;
+  label.textContent = fullLabel;
+  label.title = fullLabel;
+  if (toggle) {
+    toggle.title = fullLabel;
+  }
 
   if (typeIcon) {
     const issueType = getIssueTypeInfo(issue);
@@ -254,6 +281,16 @@ function applyTheme() {
     ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
     : mode;
   document.documentElement.dataset.theme = resolved;
+}
+
+function activateAltThemeVariant() {
+  const currentTheme = document.documentElement.dataset.theme;
+
+  if (currentTheme === "light") {
+    document.documentElement.dataset.theme = "light-alt";
+  } else if (currentTheme === "dark") {
+    document.documentElement.dataset.theme = "dark-alt";
+  }
 }
 
 function normalizeHost(host) {
@@ -560,11 +597,10 @@ async function loadState() {
 
 async function saveSettings() {
   state.settings = {
+    ...state.settings,
     jiraHost: normalizeHost($("jiraHost").value),
     jiraEmail: $("jiraEmail").value.trim(),
-    jiraToken: $("jiraToken").value.trim(),
-    themeMode: $("themeMode").value,
-    languageMode: $("languageMode").value
+    jiraToken: $("jiraToken").value.trim()
   };
   await storage.set({ settings: state.settings });
   applyTheme();
@@ -694,7 +730,7 @@ function renderWorklogs(worklogs) {
     return `
       <article class="worklog-card" data-index="${index}">
         <div class="worklog-row">
-          <div class="issue-title" title="${escapeHtml(issue.key)} - ${escapeHtml(issue.fields.summary ?? "")}">${issueTypeIcon}<span class="issue-key">${escapeHtml(issue.key)}</span> - ${escapeHtml(issue.fields.summary ?? "")}</div>
+          <div class="issue-title" title="${escapeHtml(issue.key)} - ${escapeHtml(issue.fields.summary ?? "")}">${issueTypeIcon}<span class="issue-key">${escapeHtml(issue.key)}</span><span class="issue-summary"> - ${escapeHtml(issue.fields.summary ?? "")}</span></div>
           <div class="status" style="${statusStyle}">${escapeHtml(status)}</div>
           <a class="icon-button" href="${url}" target="_blank" title="${t('openJira')}" aria-label="${t('openJira')}">${materialIcon("mi-open-in-new")}</a>
           <div class="duration">${secondsToTime(worklog.timeSpentSeconds ?? 0)}</div>
@@ -881,6 +917,26 @@ function setupEvents() {
     await storage.set({ settings: state.settings });
     applyLanguage();
   });
+
+  // Easter Egg: activate light-alt/dark-alt theme variant via Info tab
+  let infoTabClickCount = 0;
+  let infoTabClickTimeout;
+  const infoTab = $("tabInfo");
+  if (infoTab) {
+    infoTab.addEventListener("click", () => {
+      infoTabClickCount++;
+      clearTimeout(infoTabClickTimeout);
+
+      if (infoTabClickCount === 5) {
+        activateAltThemeVariant();
+        infoTabClickCount = 0;
+      }
+
+      infoTabClickTimeout = setTimeout(() => {
+        infoTabClickCount = 0;
+      }, 2000);
+    });
+  }
 
   $("createButton").addEventListener("click", openCreateDialog);
   $("closeDialogButton").addEventListener("click", () => $("worklogDialog").close());
