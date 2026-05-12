@@ -12,7 +12,8 @@
   <div id="app" class="app">
     <header class="topbar">
       <div class="brand">
-        <img class="brand-mark" src="icons/icon128.png" alt="JiraLog" />
+        <img id="brandLogo" class="brand-mark" src="icons/icon128.png" alt="JiraLog" />
+        <span id="brandEmoji" class="brand-emoji hidden" aria-hidden="true">😠</span>
         <div>
           <div class="brand-title">JiraLog</div>
           <div id="connectionState" class="brand-subtitle" data-i18n="disconnected">Disconnected</div>
@@ -23,8 +24,8 @@
             viewBox="0 0 24 24" aria-hidden="true">
             <use href="#mi-schedule" />
           </svg></button>
-        <button id="tabSettings" class="tab" data-page="settings" title="Settings" aria-label="Settings"><svg class="mi"
-            viewBox="0 0 24 24" aria-hidden="true">
+        <button id="tabSettings" class="tab" data-page="settings" title="Settings" aria-label="Settings"
+          data-i18n-title="settings"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true">
             <use href="#mi-settings" />
           </svg></button>
         <button id="tabInfo" class="tab" data-page="info" title="Info" aria-label="Info"><svg class="mi"
@@ -38,10 +39,16 @@
       <section id="pageWorklogs" class="page">
         <div class="toolbar">
           <button id="createButton" class="primary-button" type="button" data-i18n="create">Create</button>
-          <label class="date-field">
-            <span class="sr-only">Date</span>
-            <input id="selectedDate" type="date" />
-          </label>
+          <div class="date-field-group">
+            <label class="date-field">
+              <span class="sr-only">Date</span>
+              <input id="selectedDate" type="date" />
+            </label>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh"><svg
+                class="mi" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#mi-refresh" />
+              </svg></button>
+          </div>
           <div class="total-time"><span data-i18n="total">Total</span>: <strong id="totalTime">00:00</strong></div>
         </div>
 
@@ -114,7 +121,7 @@
 
           <footer class="info-footer">
             <p class="footer-credit" data-i18n="createdBy">Created by Alexander Karge</p>
-            <p class="footer-copyright">&copy; 2026 All Rights Reserved.</p>
+            <p class="footer-copyright">&copy; 2026 <span data-i18n="allRightsReserved">All Rights Reserved</span>.</p>
           </footer>
         </div>
       </section>
@@ -124,14 +131,14 @@
   <dialog id="worklogDialog" class="modal">
     <form id="worklogForm" method="dialog" class="modal-content">
       <div class="modal-header">
-        <h2 data-i18n="createWorklog">Create worklog</h2>
+        <h2 id="worklogDialogTitle" data-i18n="createWorklog">Create worklog</h2>
         <button id="closeDialogButton" class="icon-button" type="button" title="Close" aria-label="Close"><svg
             class="mi" viewBox="0 0 24 24" aria-hidden="true">
             <use href="#mi-close" />
           </svg></button>
       </div>
 
-      <label>
+      <label id="ticketSelectLabel">
         <span data-i18n="ticket">Ticket</span>
         <div class="ticket-select" id="ticketSelect">
           <button id="ticketDropdownToggle" class="ticket-dropdown-button" type="button" aria-haspopup="listbox"
@@ -197,6 +204,10 @@
     <symbol id="mi-chat" viewBox="0 0 24 24">
       <path d="M4 4h16a2 2 0 0 1 2 2v14l-4-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v8h14.83L20 15.17V6Z" />
     </symbol>
+    <symbol id="mi-edit" viewBox="0 0 24 24">
+      <path
+        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" />
+    </symbol>
     <symbol id="mi-chat-filled" viewBox="0 0 24 24">
       <path d="M4 2h16a2 2 0 0 1 2 2v18l-4-4H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" />
     </symbol>
@@ -216,6 +227,10 @@
     <symbol id="mi-star-outline" viewBox="0 0 24 24">
       <path
         d="m22 9.24-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03ZM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.7 4.03 4.38.38-3.32 2.88 1 4.28Z" />
+    </symbol>
+    <symbol id="mi-refresh" viewBox="0 0 24 24">
+      <path
+        d="M12 5V1l-4 4 4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 9.74C4.46 10.97 4 12.43 4 14c0 4.42 3.58 8 8 8v4l4-4-4-4v3z" />
     </symbol>
   </svg>
 

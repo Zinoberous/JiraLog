@@ -20,12 +20,13 @@ const state = {
   selectedDate: defaults.selectedDate,
   worklogs: [],
   selectedIssue: null,
-  cachedIssues: []
+  cachedIssues: [],
+  editingWorklogIndex: null
 };
 
 const i18n = {
   de: {
-    create: "Erstellen",
+    create: "Hinzufügen",
     total: "Gesamt",
     settings: "Einstellungen",
     jiraAccess: "Jira-Zugang",
@@ -35,6 +36,8 @@ const i18n = {
     language: "Sprache",
     save: "Speichern",
     createWorklog: "Worklog erstellen",
+    editWorklog: "Worklog bearbeiten",
+    edit: "Bearbeiten",
     ticket: "Ticket",
     duration: "Dauer",
     date: "Datum",
@@ -62,10 +65,11 @@ const i18n = {
     downloadLatest: "Neueste Version herunterladen",
     reportIssue: "Ein Problem melden",
     backToTickets: "Zurück zu Tickets",
-    createdBy: "Erstellt von Alexander Karge"
+    createdBy: "Erstellt von Alexander Karge",
+    allRightsReserved: "Alle Rechte vorbehalten"
   },
   en: {
-    create: "Create",
+    create: "Add",
     total: "Total",
     settings: "Settings",
     jiraAccess: "Jira Access",
@@ -75,6 +79,8 @@ const i18n = {
     language: "Language",
     save: "Save",
     createWorklog: "Create worklog",
+    editWorklog: "Edit worklog",
+    edit: "Edit",
     ticket: "Issue",
     duration: "Duration",
     date: "Date",
@@ -102,7 +108,8 @@ const i18n = {
     downloadLatest: "Download Latest Version",
     reportIssue: "Report an issue",
     backToTickets: "Back to Tickets",
-    createdBy: "Created by Alexander Karge"
+    createdBy: "Created by Alexander Karge",
+    allRightsReserved: "All Rights Reserved"
   }
 };
 
@@ -123,6 +130,11 @@ function applyLanguage() {
   document.documentElement.lang = getLanguage();
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    const value = t(element.dataset.i18nTitle);
+    element.title = value;
+    element.setAttribute("aria-label", value);
   });
   updateTicketSearchPlaceholder();
   updateConnectionState();
@@ -416,7 +428,8 @@ function updateWorklogFormValidity() {
     return;
   }
 
-  const hasIssue = Boolean(state.selectedIssue);
+  const isEditing = state.editingWorklogIndex !== null;
+  const hasIssue = isEditing || Boolean(state.selectedIssue);
   const durationValue = durationInput.value.trim();
   const validDuration = isDurationValid();
   const canSave = hasIssue && validDuration;
@@ -694,7 +707,7 @@ async function loadWorklogs() {
       }
     }
 
-    state.worklogs = worklogs.sort((a, b) => new Date(b.worklog.started) - new Date(a.worklog.started));
+    state.worklogs = worklogs.sort((a, b) => new Date(b.worklog.created) - new Date(a.worklog.created));
     renderWorklogs(state.worklogs);
   } catch (error) {
     renderWorklogs([]);
@@ -736,6 +749,7 @@ function renderWorklogs(worklogs) {
           <div class="duration">${secondsToTime(worklog.timeSpentSeconds ?? 0)}</div>
           <div class="actions">
             <button class="icon-button toggle-comment ${commentClass}" type="button" title="${t('comment')}" aria-label="${t('comment')}">${commentIcon}</button>
+            <button class="icon-button edit-worklog" type="button" title="${t('edit')}" aria-label="${t('edit')}">${materialIcon("mi-edit")}</button>
             <button class="icon-button delete-worklog" type="button" title="${t('delete')}" aria-label="${t('delete')}">${materialIcon("mi-delete")}</button>
           </div>
         </div>
@@ -754,22 +768,58 @@ async function deleteWorklog(index) {
   const item = state.worklogs[index];
   if (!item || !confirm(t("deleteConfirm"))) return;
   await jiraFetch(`/rest/api/3/issue/${item.issue.key}/worklog/${item.worklog.id}`, { method: "DELETE" });
-  await loadWorklogs();
+
+  // Eintrag aus state entfernen und UI aktualisieren
+  state.worklogs.splice(index, 1);
+  renderWorklogs(state.worklogs);
 }
 
 function openCreateDialog() {
+  state.editingWorklogIndex = null;
   state.selectedIssue = null;
   setTicketDropdownLabel();
   $("ticketSearch").value = "";
   $("durationInput").value = "30m";
   $("commentEditor").value = "";
   closeTicketDropdown();
+  $("ticketDropdownToggle").disabled = false;
+  $("ticketSelectLabel").hidden = false;
+  $("worklogDialogTitle").textContent = t("createWorklog");
+  $("worklogDialog").showModal();
+  updateWorklogFormValidity();
+}
+
+function openEditDialog(index) {
+  const item = state.worklogs[index];
+  if (!item) return;
+  state.editingWorklogIndex = index;
+  state.selectedIssue = item.issue;
+  const seconds = item.worklog.timeSpentSeconds ?? 0;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  $("durationInput").value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  $("commentEditor").value = adfToText(item.worklog.comment);
+  setTicketDropdownLabel(item.issue);
+  closeTicketDropdown();
+  $("ticketDropdownToggle").disabled = true;
+  $("ticketSelectLabel").hidden = false;
+  $("worklogDialogTitle").textContent = t("editWorklog");
   $("worklogDialog").showModal();
   updateWorklogFormValidity();
 }
 
 async function loadTicketSuggestions(query) {
   const resultContainer = $("ticketResults");
+
+  if (query.trim().toLowerCase() === "easter egg") {
+    state.cachedIssues = [];
+    resultContainer.innerHTML = `
+      <div class="ticket-easter-egg">
+        <img src="https://i.gifer.com/ZC9P.gif" alt="Easter egg" loading="lazy" />
+      </div>`;
+    return;
+  }
+
   resultContainer.innerHTML = `<div class="ticket-item">${t("loading")}</div>`;
   try {
     const issues = await searchIssues(query);
@@ -800,8 +850,34 @@ async function searchIssues(query) {
     ...issues
   ];
   const mapped = combined.map(issue => ({ ...issue, pinned: pinnedKeys.has(issue.key) }));
-  const pinned = mapped.filter(issue => issue.pinned);
-  const unpinned = mapped.filter(issue => !issue.pinned);
+
+  // Gepinnte in der Reihenfolge, in der sie gepinnt wurden (älteste zuerst)
+  const pinned = [...state.pinnedIssues]
+    .reverse()
+    .map(p => mapped.find(m => m.key === p.key))
+    .filter(Boolean);
+
+  // Letztes Buchungsdatum je Ticket aus geladenen Worklogs
+  const lastBooked = new Map();
+  for (const { issue, worklog } of state.worklogs) {
+    const created = new Date(worklog.created);
+    const existing = lastBooked.get(issue.key);
+    if (!existing || created > existing) {
+      lastBooked.set(issue.key, created);
+    }
+  }
+
+  const unpinned = mapped
+    .filter(issue => !issue.pinned)
+    .sort((a, b) => {
+      const aDate = lastBooked.get(a.key) ?? null;
+      const bDate = lastBooked.get(b.key) ?? null;
+      if (aDate && bDate) return bDate - aDate;
+      if (aDate) return -1;
+      if (bDate) return 1;
+      return 0;
+    });
+
   return [...pinned, ...unpinned];
 }
 
@@ -847,7 +923,19 @@ async function togglePinned(issue) {
     });
   }
   await storage.set({ pinnedIssues: state.pinnedIssues });
-  await loadTicketSuggestions($("ticketSearch")?.value ?? "");
+
+  // Pin-Icon in der UI aktualisieren
+  const isPinned = state.pinnedIssues.some(p => p.key === issue.key);
+  const issueIndex = state.cachedIssues.findIndex(i => i.key === issue.key);
+  if (issueIndex >= 0) {
+    state.cachedIssues[issueIndex].pinned = isPinned;
+    const pinButton = document.querySelector(`[data-pin-index="${issueIndex}"]`);
+    if (pinButton) {
+      const newIcon = isPinned ? materialIcon("mi-star") : materialIcon("mi-star-outline");
+      pinButton.innerHTML = newIcon;
+      pinButton.classList.toggle("pinned", isPinned);
+    }
+  }
 }
 
 function selectIssue(issue) {
@@ -859,6 +947,12 @@ function selectIssue(issue) {
 
 async function createWorklog(event) {
   event.preventDefault();
+
+  if (state.editingWorklogIndex !== null) {
+    await updateWorklog();
+    return;
+  }
+
   const hasIssue = Boolean(state.selectedIssue);
   const validDuration = isDurationValid();
   if (!hasIssue) {
@@ -890,14 +984,74 @@ async function createWorklog(event) {
   updateWorklogFormValidity();
 }
 
+async function updateWorklog() {
+  const item = state.worklogs[state.editingWorklogIndex];
+  if (!item) return;
+
+  const validDuration = isDurationValid();
+  if (!validDuration) {
+    showNotice(t("invalidDuration"), true);
+    updateWorklogFormValidity();
+    return;
+  }
+
+  const seconds = parseDurationToSeconds($("durationInput").value);
+  const text = $("commentEditor").value.trim();
+  await jiraFetch(`/rest/api/3/issue/${item.issue.key}/worklog/${item.worklog.id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      timeSpentSeconds: seconds,
+      comment: textToAdf(text)
+    })
+  });
+
+  $("worklogDialog").close();
+  showNotice(t("saved"));
+  await loadWorklogs();
+}
+
 function setupEvents() {
   document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => setPage(tab.dataset.page));
   });
 
+  let logoClickCount = 0;
+  let logoEasterEggTriggered = false;
+  const brandLogo = $("brandLogo");
+  const brandEmoji = $("brandEmoji");
+  const triggerLogoEasterEgg = () => {
+    if (logoEasterEggTriggered) {
+      return;
+    }
+
+    logoClickCount += 1;
+    if (logoClickCount < 10) {
+      return;
+    }
+
+    logoEasterEggTriggered = true;
+    if (brandLogo) {
+      brandLogo.classList.add("hidden");
+    }
+    if (brandEmoji) {
+      brandEmoji.classList.remove("hidden");
+    }
+  };
+
+  if (brandLogo) {
+    brandLogo.addEventListener("click", triggerLogoEasterEgg);
+  }
+  if (brandEmoji) {
+    brandEmoji.addEventListener("click", triggerLogoEasterEgg);
+  }
+
   $("selectedDate").addEventListener("change", async () => {
     state.selectedDate = $("selectedDate").value;
     await storage.set({ selectedDate: state.selectedDate });
+    await loadWorklogs();
+  });
+
+  $("refreshButton").addEventListener("click", async () => {
     await loadWorklogs();
   });
 
@@ -993,6 +1147,9 @@ function setupEvents() {
     const index = Number(card.dataset.index);
     if (event.target.closest(".toggle-comment")) {
       card.querySelector(".comment-panel").classList.toggle("hidden");
+    }
+    if (event.target.closest(".edit-worklog")) {
+      openEditDialog(index);
     }
     if (event.target.closest(".delete-worklog")) {
       await deleteWorklog(index);

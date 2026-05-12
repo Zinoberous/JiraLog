@@ -139,6 +139,16 @@ button {
   object-fit: cover;
 }
 
+.brand-emoji {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  user-select: none;
+}
+
 .brand-title {
   font-weight: 700;
 }
@@ -166,6 +176,12 @@ button {
   color: var(--muted);
   display: grid;
   place-items: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tab:hover:not(.active) {
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+  color: var(--text);
 }
 
 .tab.active {
@@ -206,6 +222,11 @@ button {
 .primary-button {
   background: var(--accent);
   color: var(--accent-contrast);
+  transition: opacity 0.2s ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  opacity: 0.9;
 }
 
 .primary-button:disabled,
@@ -218,6 +239,11 @@ button {
   background: var(--surface-2);
   color: var(--text);
   border-color: var(--border);
+  transition: background-color 0.2s ease;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface-2) 80%, var(--accent) 20%);
 }
 
 .icon-button {
@@ -230,6 +256,22 @@ button {
   display: inline-grid;
   place-items: center;
   padding: 0;
+  transition: background-color 0.2s ease;
+}
+
+.icon-button:hover {
+  background: var(--surface-2);
+}
+
+.date-field-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#refreshButton {
+  align-self: stretch;
+  width: 35px;
 }
 
 .date-field input,
@@ -460,8 +502,7 @@ label>span {
 
 .modal {
   width: calc(100% - 20px);
-  max-width: calc(100% - 20px);
-  max-height: calc(100% - 20px);
+  height: calc(100% - 20px);
   border: 1px solid var(--border);
   border-radius: 12px;
   margin: auto;
@@ -549,6 +590,12 @@ label>span {
   background: var(--surface-2);
 }
 
+.ticket-dropdown-button:disabled {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
 .ticket-dropdown-caret {
   color: var(--muted);
   flex: 0 0 auto;
@@ -583,8 +630,18 @@ label>span {
 }
 
 .ticket-results {
-  max-height: 220px;
+  max-height: 330px;
   overflow: auto;
+}
+
+.ticket-easter-egg {
+  padding: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.ticket-easter-egg img {
+  height: 300px;
 }
 
 .ticket-item {
