@@ -845,6 +845,28 @@ async function searchIssues(query) {
   const data = await jiraSearch(jql, ["summary", "status", "issuetype"], 25);
   const issues = data.issues ?? [];
   const pinnedKeys = new Set(state.pinnedIssues.map(issue => issue.key));
+
+  if (trimmed.length > 0) {
+    // Bei aktiver Suche nur echte Suchergebnisse anzeigen,
+    // aber Treffer, die gepinnt sind, innerhalb der Trefferliste nach oben ziehen.
+    const mappedHits = issues.map(issue => ({ ...issue, pinned: pinnedKeys.has(issue.key) }));
+    const pinnedHitsByKey = new Map(
+      [...state.pinnedIssues].reverse().map((issue, index) => [issue.key, index])
+    );
+
+    return mappedHits.sort((a, b) => {
+      const aPinned = a.pinned;
+      const bPinned = b.pinned;
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      if (aPinned && bPinned) {
+        return (pinnedHitsByKey.get(a.key) ?? Number.MAX_SAFE_INTEGER)
+          - (pinnedHitsByKey.get(b.key) ?? Number.MAX_SAFE_INTEGER);
+      }
+      return 0;
+    });
+  }
+
   const combined = [
     ...state.pinnedIssues.filter(p => !issues.some(i => i.key === p.key)),
     ...issues
