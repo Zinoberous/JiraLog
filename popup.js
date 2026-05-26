@@ -839,7 +839,7 @@ async function searchIssues(query) {
     jql = `(${pinnedPart}(assignee = currentUser() AND statusCategory != Done)) ORDER BY updated DESC`;
   } else {
     const safe = trimmed.replaceAll('"', '\\"');
-    jql = `(issuekey = "${safe}" OR text ~ "${safe}*") AND statusCategory != Done ORDER BY updated DESC`;
+    jql = `(issuekey = "${safe}" OR text ~ "${safe}*") ORDER BY updated DESC`;
   }
 
   const data = await jiraSearch(jql, ["summary", "status", "issuetype"], 25);
