@@ -35,6 +35,7 @@ const i18n = {
     theme: "Theme",
     language: "Sprache",
     save: "Speichern",
+    saveAndClose: "Speichern/Schließen",
     createWorklog: "Worklog erstellen",
     editWorklog: "Worklog bearbeiten",
     edit: "Bearbeiten",
@@ -78,6 +79,7 @@ const i18n = {
     theme: "Theme",
     language: "Language",
     save: "Save",
+    saveAndClose: "Save/Close",
     createWorklog: "Create worklog",
     editWorklog: "Edit worklog",
     edit: "Edit",
@@ -424,7 +426,8 @@ function isDurationValid() {
 function updateWorklogFormValidity() {
   const durationInput = $("durationInput");
   const saveButton = $("saveWorklogButton");
-  if (!durationInput || !saveButton) {
+  const saveAndCloseButton = $("saveAndCloseWorklogButton");
+  if (!durationInput || !saveButton || !saveAndCloseButton) {
     return;
   }
 
@@ -435,6 +438,7 @@ function updateWorklogFormValidity() {
   const canSave = hasIssue && validDuration;
 
   saveButton.disabled = !canSave;
+  saveAndCloseButton.disabled = !canSave;
   durationInput.classList.toggle("invalid", durationValue.length > 0 && !validDuration);
   durationInput.setAttribute("aria-invalid", durationValue.length > 0 && !validDuration ? "true" : "false");
 }
@@ -786,6 +790,8 @@ async function deleteWorklog(index) {
 function openCreateDialog() {
   state.editingWorklogIndex = null;
   state.selectedIssue = null;
+  $("saveWorklogButton").classList.remove("hidden");
+  $("saveAndCloseWorklogButton").classList.remove("hidden");
   setTicketDropdownLabel();
   $("ticketSearch").value = "";
   $("durationInput").value = "30m";
@@ -805,6 +811,8 @@ function openEditDialog(index) {
   if (!item) return;
   state.editingWorklogIndex = index;
   state.selectedIssue = item.issue;
+  $("saveWorklogButton").classList.add("hidden");
+  $("saveAndCloseWorklogButton").classList.remove("hidden");
   const seconds = item.worklog.timeSpentSeconds ?? 0;
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -983,8 +991,17 @@ function selectIssue(issue) {
 async function createWorklog(event) {
   event.preventDefault();
 
+  await saveWorklog(false);
+}
+
+async function saveAndCloseWorklog() {
+  await saveWorklog(true);
+}
+
+async function saveWorklog(closeDialogAfterSave) {
   if (state.editingWorklogIndex !== null) {
-    await updateWorklog();
+    // Im Bearbeiten-Modus nur Speichern/Schließen zulassen.
+    await updateWorklog(true);
     return;
   }
 
@@ -1002,10 +1019,25 @@ async function createWorklog(event) {
     return;
   }
 
+  const issueKey = state.selectedIssue?.key;
   const seconds = parseDurationToSeconds($("durationInput").value);
   const selectedWorklogDate = $("worklogDateInput").value || state.selectedDate;
   const text = $("commentEditor").value.trim();
-  await jiraFetch(`/rest/api/3/issue/${state.selectedIssue.key}/worklog`, {
+
+  if (!closeDialogAfterSave) {
+    // Für schnelles Mehrfach-Anlegen Dialog sofort zurücksetzen, bevor gespeichert wird.
+    state.selectedIssue = null;
+    setTicketDropdownLabel();
+    $("ticketSearch").value = "";
+    closeTicketDropdown();
+    $("durationInput").value = "30m";
+    $("commentEditor").value = "";
+    $("worklogDateInput").value = state.selectedDate;
+    $("durationInput").focus();
+    updateWorklogFormValidity();
+  }
+
+  await jiraFetch(`/rest/api/3/issue/${issueKey}/worklog`, {
     method: "POST",
     body: JSON.stringify({
       started: jiraStartedAt(selectedWorklogDate),
@@ -1014,13 +1046,17 @@ async function createWorklog(event) {
     })
   });
 
-  $('worklogDialog').close();
   showNotice(t("saved"));
   await loadWorklogs();
-  updateWorklogFormValidity();
+
+  if (closeDialogAfterSave) {
+    $("worklogDialog").close();
+    updateWorklogFormValidity();
+    return;
+  }
 }
 
-async function updateWorklog() {
+async function updateWorklog(closeDialogAfterSave = true) {
   const item = state.worklogs[state.editingWorklogIndex];
   if (!item) return;
 
@@ -1043,7 +1079,9 @@ async function updateWorklog() {
     })
   });
 
-  $("worklogDialog").close();
+  if (closeDialogAfterSave) {
+    $("worklogDialog").close();
+  }
   showNotice(t("saved"));
   await loadWorklogs();
 }
@@ -1134,6 +1172,7 @@ function setupEvents() {
   $("closeDialogButton").addEventListener("click", () => $("worklogDialog").close());
   $("cancelDialogButton").addEventListener("click", () => $("worklogDialog").close());
   $("worklogForm").addEventListener("submit", createWorklog);
+  $("saveAndCloseWorklogButton").addEventListener("click", saveAndCloseWorklog);
   $("durationInput").addEventListener("input", updateWorklogFormValidity);
 
   let searchTimeout;
