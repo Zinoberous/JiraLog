@@ -231,8 +231,9 @@ button {
 
 .primary-button:disabled,
 .secondary-button:disabled {
-  opacity: .55;
+  opacity: .6;
   cursor: not-allowed;
+  filter: saturate(.55);
 }
 
 .secondary-button {
@@ -290,6 +291,17 @@ select:focus,
 .comment-editor:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled,
+.ticket-dropdown-button:disabled {
+  background: color-mix(in srgb, var(--surface-2) 88%, #000 12%);
+  border-color: color-mix(in srgb, var(--border) 80%, #000 20%);
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+  cursor: not-allowed;
 }
 
 .notice {
@@ -531,6 +543,17 @@ label>span {
   min-width: 0;
 }
 
+.worklog-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  min-width: 0;
+}
+
+.worklog-time-row>label {
+  min-width: 0;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -591,9 +614,8 @@ label>span {
 }
 
 .ticket-dropdown-button:disabled {
-  cursor: default;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .ticket-dropdown-caret {

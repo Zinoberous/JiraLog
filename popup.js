@@ -456,6 +456,15 @@ function jiraStartedAt(date) {
   return `${date}T09:00:00.000${sign}${hh}${mm}`;
 }
 
+function startedToLocalDateValue(started) {
+  const date = new Date(started);
+  if (Number.isNaN(date.getTime())) {
+    return state.selectedDate;
+  }
+  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+  return localDate.toISOString().slice(0, 10);
+}
+
 function textToAdf(text) {
   const paragraphs = text.split(/\n{2,}/).map((paragraph) => ({
     type: "paragraph",
@@ -780,6 +789,8 @@ function openCreateDialog() {
   setTicketDropdownLabel();
   $("ticketSearch").value = "";
   $("durationInput").value = "30m";
+  $("worklogDateInput").value = state.selectedDate;
+  $("worklogDateInput").disabled = true;
   $("commentEditor").value = "";
   closeTicketDropdown();
   $("ticketDropdownToggle").disabled = false;
@@ -798,6 +809,8 @@ function openEditDialog(index) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   $("durationInput").value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  $("worklogDateInput").value = startedToLocalDateValue(item.worklog.started);
+  $("worklogDateInput").disabled = false;
   $("commentEditor").value = adfToText(item.worklog.comment);
   setTicketDropdownLabel(item.issue);
   closeTicketDropdown();
@@ -990,11 +1003,12 @@ async function createWorklog(event) {
   }
 
   const seconds = parseDurationToSeconds($("durationInput").value);
+  const selectedWorklogDate = $("worklogDateInput").value || state.selectedDate;
   const text = $("commentEditor").value.trim();
   await jiraFetch(`/rest/api/3/issue/${state.selectedIssue.key}/worklog`, {
     method: "POST",
     body: JSON.stringify({
-      started: jiraStartedAt(state.selectedDate),
+      started: jiraStartedAt(selectedWorklogDate),
       timeSpentSeconds: seconds,
       comment: textToAdf(text)
     })
@@ -1018,10 +1032,12 @@ async function updateWorklog() {
   }
 
   const seconds = parseDurationToSeconds($("durationInput").value);
+  const selectedWorklogDate = $("worklogDateInput").value || state.selectedDate;
   const text = $("commentEditor").value.trim();
   await jiraFetch(`/rest/api/3/issue/${item.issue.key}/worklog/${item.worklog.id}`, {
     method: "PUT",
     body: JSON.stringify({
+      started: jiraStartedAt(selectedWorklogDate),
       timeSpentSeconds: seconds,
       comment: textToAdf(text)
     })
