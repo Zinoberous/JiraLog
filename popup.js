@@ -21,7 +21,8 @@ const state = {
   worklogs: [],
   selectedIssue: null,
   cachedIssues: [],
-  editingWorklogIndex: null
+  editingWorklogIndex: null,
+  ticketSearchRequestId: 0
 };
 
 const i18n = {
@@ -831,8 +832,12 @@ function openEditDialog(index) {
 
 async function loadTicketSuggestions(query) {
   const resultContainer = $("ticketResults");
+  const requestId = ++state.ticketSearchRequestId;
 
   if (query.trim().toLowerCase() === "easter egg") {
+    if (requestId !== state.ticketSearchRequestId) {
+      return;
+    }
     state.cachedIssues = [];
     resultContainer.innerHTML = `
       <div class="ticket-easter-egg">
@@ -844,9 +849,15 @@ async function loadTicketSuggestions(query) {
   resultContainer.innerHTML = `<div class="ticket-item">${t("loading")}</div>`;
   try {
     const issues = await searchIssues(query);
+    if (requestId !== state.ticketSearchRequestId) {
+      return;
+    }
     state.cachedIssues = issues;
     renderTicketResults(issues);
   } catch (error) {
+    if (requestId !== state.ticketSearchRequestId) {
+      return;
+    }
     resultContainer.innerHTML = `<div class="ticket-item">${escapeHtml(error.message)}</div>`;
   }
 }
