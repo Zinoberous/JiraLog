@@ -22,6 +22,7 @@ const state = {
   selectedIssue: null,
   cachedIssues: [],
   editingWorklogIndex: null,
+  worklogLoadRequestId: 0,
   ticketSearchRequestId: 0
 };
 
@@ -690,6 +691,7 @@ async function testLogin(showResult = true) {
 }
 
 async function loadWorklogs() {
+  const requestId = ++state.worklogLoadRequestId;
   hideNotice();
   if (!state.isConnected) {
     return;
@@ -721,9 +723,17 @@ async function loadWorklogs() {
       }
     }
 
+    if (requestId !== state.worklogLoadRequestId) {
+      return;
+    }
+
     state.worklogs = worklogs.sort((a, b) => new Date(b.worklog.created) - new Date(a.worklog.created));
     renderWorklogs(state.worklogs);
   } catch (error) {
+    if (requestId !== state.worklogLoadRequestId) {
+      return;
+    }
+
     renderWorklogs([]);
     showNotice(error.message, true);
   }
