@@ -878,7 +878,7 @@ async function searchIssues(query) {
   if (trimmed.length === 0) {
     const pinnedKeys = state.pinnedIssues.map(issue => issue.key);
     const pinnedPart = pinnedKeys.length > 0 ? `key in (${pinnedKeys.join(",")}) OR ` : "";
-    jql = `(${pinnedPart}(assignee = currentUser() AND statusCategory != Done)) ORDER BY updated DESC`;
+    jql = `(${pinnedPart}(assignee = currentUser() AND (statusCategory != Done OR (statusCategory = Done AND resolved >= startOfDay(-7d))))) ORDER BY updated DESC`;
   } else {
     const safe = trimmed.replaceAll('"', '\\"');
     jql = `(issuekey = "${safe}" OR text ~ "${safe}*") ORDER BY updated DESC`;
