@@ -6,7 +6,7 @@ The extension helps you document Jira worklogs for a selected day without repeat
 
 ## Features
 
-- Jira Cloud login with host URL, email address, and API token
+- Jira Cloud login with Atlassian company name, email address, and API token
 - Day-based worklog dashboard
 - Total tracked time for the selected day
 - Worklog list with issue key, title, status, Jira link, duration, comment, and delete action
@@ -22,6 +22,8 @@ The extension helps you document Jira worklogs for a selected day without repeat
 - About page with version, author, and license information
 
 ## Jira API Compatibility
+
+Enter only the Atlassian company name in the host field (for example, `example` for `https://example.atlassian.net`).
 
 The extension targets Jira Cloud REST API v3 and uses the current search endpoint:
 
@@ -56,7 +58,7 @@ Create a Jira API token in your Atlassian account security settings.
 
 Use the following credentials in the extension settings:
 
-- Jira host URL, for example `https://your-company.atlassian.net`
+- Atlassian company name, for example `your-company` for `https://your-company.atlassian.net`
 - Jira account email address
 - Jira API token
 

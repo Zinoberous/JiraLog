@@ -483,6 +483,58 @@ textarea:disabled,
   gap: 12px;
 }
 
+.host-input {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.host-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.settings-card label>.host-input {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.settings-card label>.host-input>span {
+  padding: 0 2px 0 9px;
+  white-space: nowrap;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.settings-card label>.host-input>span:last-child {
+  padding: 0 9px 0 2px;
+}
+
+.settings-card .host-input input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+.settings-card .host-input input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
 .form-grid h2,
 .info-card h2 {
   margin: 0 0 2px;

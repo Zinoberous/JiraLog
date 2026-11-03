@@ -59,11 +59,12 @@
       <section id="pageSettings" class="page">
         <div class="settings-layout">
           <form id="settingsForm" class="card form-grid settings-card">
-            <h2 data-i18n="jiraAccess">Jira Access</h2>
+            <h2 data-i18n="jiraAccess">Access</h2>
             <label>
-              <span>Jira Host URL</span>
-              <input id="jiraHost" type="url" placeholder="https://your-company.atlassian.net" autocomplete="url"
-                required />
+              <span data-i18n="hostLabel">Atlassian company</span>
+              <span class="host-input"><span aria-hidden="true">https://</span><input id="jiraHost" type="text"
+                  placeholder="your-company" pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                  maxlength="63" autocomplete="organization" required /><span aria-hidden="true">.atlassian.net</span></span>
             </label>
             <label>
               <span>Email</span>

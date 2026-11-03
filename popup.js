@@ -31,11 +31,12 @@ const i18n = {
     create: "Hinzufügen",
     total: "Gesamt",
     settings: "Einstellungen",
-    jiraAccess: "Jira-Zugang",
+    jiraAccess: "Zugang",
     saveAccess: "Zugang speichern",
     preferences: "Darstellung und Sprache",
     theme: "Theme",
     language: "Sprache",
+    hostLabel: "Atlassian-Unternehmen",
     save: "Speichern",
     saveAndClose: "Speichern/Schließen",
     createWorklog: "Worklog erstellen",
@@ -75,11 +76,12 @@ const i18n = {
     create: "Add",
     total: "Total",
     settings: "Settings",
-    jiraAccess: "Jira Access",
+    jiraAccess: "Access",
     saveAccess: "Save Access",
     preferences: "Preferences",
     theme: "Theme",
     language: "Language",
+    hostLabel: "Atlassian company",
     save: "Save",
     saveAndClose: "Save/Close",
     createWorklog: "Create worklog",
@@ -311,6 +313,24 @@ function activateAltThemeVariant() {
 
 function normalizeHost(host) {
   return host.trim().replace(/\/+$/, "");
+}
+
+function jiraTenantHost(value) {
+  const tenant = value.trim();
+  if (tenant.length > 63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(tenant)) {
+    throw new Error("Bitte nur den Atlassian-Unternehmensnamen angeben (z. B. your-company).");
+  }
+  return `https://${tenant.toLowerCase()}.atlassian.net`;
+}
+
+function hostTenant(host) {
+  try {
+    const url = new URL(host);
+    const match = url.hostname.match(/^([a-z0-9-]+)\.atlassian\.net$/i);
+    return match ? match[1] : host;
+  } catch {
+    return host;
+  }
 }
 
 function hasCredentials() {
@@ -615,7 +635,7 @@ async function loadState() {
   state.pinnedIssues = data.pinnedIssues ?? [];
   state.selectedDate = data.selectedDate ?? defaults.selectedDate;
 
-  $("jiraHost").value = state.settings.jiraHost;
+  $("jiraHost").value = hostTenant(state.settings.jiraHost);
   $("jiraEmail").value = state.settings.jiraEmail;
   $("jiraToken").value = state.settings.jiraToken;
   $("themeMode").value = state.settings.themeMode;
@@ -626,7 +646,7 @@ async function loadState() {
 async function saveSettings() {
   state.settings = {
     ...state.settings,
-    jiraHost: normalizeHost($("jiraHost").value),
+    jiraHost: jiraTenantHost($("jiraHost").value),
     jiraEmail: $("jiraEmail").value.trim(),
     jiraToken: $("jiraToken").value.trim()
   };
