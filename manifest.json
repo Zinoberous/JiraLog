@@ -24,9 +24,7 @@
     "alarms"
   ],
   "background": { "service_worker": "background.js" },
-  "host_permissions": [
-    "https://*/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+  "optional_host_permissions": [
+    "https://*.atlassian.net/*"
   ]
 }

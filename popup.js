@@ -41,6 +41,7 @@ const i18n = {
     language: "Sprache",
     hostLabel: "Host",
     tokenLabel: "API-Token",
+    jiraPermissionRequired: "Speichere den Zugang und erlaube den Zugriff auf deinen Jira-Host.",
     myIssues: "Meine Tickets",
     openIssues: "Offene Tickets",
     noOpenIssues: "Dir sind keine offenen Tickets zugewiesen.",
@@ -96,6 +97,7 @@ const i18n = {
     language: "Language",
     hostLabel: "Host",
     tokenLabel: "API token",
+    jiraPermissionRequired: "Save the connection and allow access to your Jira host.",
     myIssues: "My issues",
     openIssues: "Open issues",
     noOpenIssues: "No open issues are assigned to you.",
@@ -671,15 +673,26 @@ async function loadState() {
 
 async function saveSettings() {
   const previous = state.settings;
+  const jiraHost = jiraTenantHost($("jiraHost").value);
+  // The request must start during the form submission gesture.
+  if (!await chrome.permissions.request({ origins: [`${jiraHost}/*`] })) {
+    showAccessNotice(t("jiraPermissionRequired"));
+    return;
+  }
+  showAccessNotice("");
   state.settings = {
     ...state.settings,
-    jiraHost: jiraTenantHost($("jiraHost").value),
+    jiraHost,
     jiraEmail: $("jiraEmail").value.trim(),
     jiraToken: $("jiraToken").value.trim()
   };
   const changed = ["jiraHost", "jiraEmail", "jiraToken"].some(key => previous[key] !== state.settings[key]);
   if (changed) issuesCache = null;
   await storage.set(changed ? { settings: state.settings, issuesCache: null } : { settings: state.settings });
+  const oldHost = normalizeHost(previous.jiraHost);
+  if (oldHost !== jiraHost && /^https:\/\/[a-z0-9-]+\.atlassian\.net$/i.test(oldHost)) {
+    await chrome.permissions.remove({ origins: [`${oldHost}/*`] }).catch(console.error);
+  }
   applyTheme();
   applyLanguage();
 
@@ -687,6 +700,12 @@ async function saveSettings() {
   if (connected) {
     await loadWorklogs();
   }
+}
+
+function showAccessNotice(message) {
+  const notice = $("accessNotice");
+  notice.textContent = message;
+  notice.classList.toggle("hidden", !message);
 }
 
 function setPage(pageName) {
@@ -1210,6 +1229,7 @@ async function updateWorklog(closeDialogAfterSave = true) {
 }
 
 function setupEvents() {
+  document.querySelector('[data-dismiss="accessNotice"]').addEventListener("click", () => showAccessNotice(""));
   document.querySelector('[data-dismiss="issuesNotice"]').addEventListener("click", () => {
     dismissedIssuesNotice = issuesCache?.error;
     renderIssues();
@@ -1268,7 +1288,8 @@ function setupEvents() {
 
   $("settingsForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    await saveSettings();
+    try { await saveSettings(); }
+    catch (error) { showAccessNotice(error.message); }
   });
 
   $("themeMode").addEventListener("change", async () => {
@@ -1391,6 +1412,11 @@ async function init() {
   setPage(selectedPage ?? "settings");
 
   if (hasCredentials()) {
+    if (!await chrome.permissions.contains({ origins: [`${normalizeHost(state.settings.jiraHost)}/*`] })) {
+      setPage("settings");
+      showAccessNotice(t("jiraPermissionRequired"));
+      return;
+    }
     const connected = await testLogin(false);
     setPage(selectedPage ?? "settings");
     if (connected) {

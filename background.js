@@ -99,6 +99,13 @@ function refresh() {
 }
 
 async function startSync() {
+  const { settings: current } = await storage.get("settings");
+  const origin = configured(current) ? new URL(current.jiraHost).origin : null;
+  if (!origin || !await chrome.permissions.contains({ origins: [`${origin}/*`] })) {
+    await chrome.alarms.clear(alarmName);
+    await chrome.action.setBadgeText({ text: "" });
+    return;
+  }
   await updateBadge();
   await ensureAlarm();
   await refresh();
@@ -116,6 +123,8 @@ function runSync() { return startSync().catch(console.error); }
 
 chrome.runtime.onInstalled.addListener(runSync);
 chrome.runtime.onStartup.addListener(runSync);
+chrome.permissions.onAdded.addListener(runSync);
+chrome.permissions.onRemoved.addListener(runSync);
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === alarmName) return runSync();
 });

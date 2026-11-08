@@ -68,7 +68,7 @@ Use the following credentials in the extension settings:
 
 The extension stores settings (including the API token), the selected day, pinned issues and the latest assigned-ticket snapshot in the local browser profile. Token storage is not encrypted by the extension. The alarms permission schedules ticket refreshes.
 
-Jira API requests go to the configured Jira host. The optional search Easter egg loads an external GIF from `i.gifer.com`.
+JiraLog requests browser access only to the configured Jira Cloud host when you save the connection. If you already configured JiraLog, save the connection again if the browser asks for host access. The optional search Easter egg loads an external GIF from `i.gifer.com`.
 
 ## International Open-Source Notes
 

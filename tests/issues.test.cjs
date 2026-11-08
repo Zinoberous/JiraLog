@@ -8,14 +8,22 @@ test("background alarm paginates assigned open issues and sets the total badge w
   const requests = [];
   let alarmListener;
   let badge;
+  let permitted = false;
   const event = { addListener() {} };
   const context = vm.createContext({
     URL, TextEncoder, AbortSignal, btoa, console,
     chrome: {
       action: { async setBadgeText({ text }) { badge = text; } },
+      permissions: {
+        async contains({ origins }) {
+          assert.equal(origins[0], "https://example.atlassian.net/*");
+          return permitted;
+        },
+        onAdded: event, onRemoved: event
+      },
       alarms: {
         onAlarm: { addListener(listener) { alarmListener = listener; } },
-        async get() {}, async create() {}
+        async get() {}, async create() {}, async clear() {}
       },
       runtime: { onInstalled: event, onStartup: event, onMessage: event },
       storage: { onChanged: event, local: {
@@ -40,6 +48,10 @@ test("background alarm paginates assigned open issues and sets the total badge w
     }
   });
   vm.runInContext(readFileSync("background.js", "utf8"), context);
+  await alarmListener({ name: "jira-issues-refresh" });
+  assert.equal(requests.length, 0);
+  assert.equal(badge, "");
+  permitted = true;
   await alarmListener({ name: "jira-issues-refresh" });
   assert.deepEqual(data.issuesCache.issues.map(issue => issue.key), ["TEST-1", "TEST-2"]);
   assert.equal(data.issuesCache.issues[1].dueDate, "2026-11-12");
