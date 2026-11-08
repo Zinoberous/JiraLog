@@ -966,3 +966,13 @@ label>span {
 .notice-close { position: absolute; inset-block-start: 4px; inset-inline-end: 5px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: inherit; font-size: 19px; line-height: 1; }
 .notice-close:hover { background: var(--surface-2); }
 .notice.hidden + .notice-close, .notice[hidden] + .notice-close { display: none; }
+.issues-summary { display: flex; align-items: baseline; gap: 8px; color: var(--muted); }
+.issues-summary strong { font-size: 22px; color: var(--text); }
+.issue-card h2 { font-size: 14px; margin: 0 0 4px; overflow-wrap: anywhere; }
+.issue-card a { color: var(--accent); text-decoration: none; }
+.issue-card a:hover { text-decoration: underline; }
+.issue-meta, .issues-updated { color: var(--muted); font-size: 12px; }
+.issues-updated { display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 8px 2px; }
+.issues-sync-indicator { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); color: var(--text); font-size: 15px; line-height: 1; animation: jira-issues-spin 1.2s linear infinite; }
+@keyframes jira-issues-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .issues-sync-indicator { animation: none; } }

@@ -1,5 +1,7 @@
 const storage = chrome.storage.local;
 let selectedPage;
+let issuesCache;
+let dismissedIssuesNotice;
 
 const defaults = {
   settings: {
@@ -39,6 +41,14 @@ const i18n = {
     language: "Sprache",
     hostLabel: "Host",
     tokenLabel: "API-Token",
+    myIssues: "Meine Tickets",
+    openIssues: "Offene Tickets",
+    noOpenIssues: "Dir sind keine offenen Tickets zugewiesen.",
+    issuesLoading: "Offene Tickets werden geladen …",
+    issuesRequestFailed: "Offene Tickets konnten nicht geladen werden.",
+    issuesDue: "Fällig",
+    issuesParent: "Übergeordnet",
+    issuesUpdated: "Aktualisiert",
     dismissNotice: "Meldung schließen",
     save: "Speichern",
     saveAndClose: "Speichern/Schließen",
@@ -86,6 +96,14 @@ const i18n = {
     language: "Language",
     hostLabel: "Host",
     tokenLabel: "API token",
+    myIssues: "My issues",
+    openIssues: "Open issues",
+    noOpenIssues: "No open issues are assigned to you.",
+    issuesLoading: "Loading open issues …",
+    issuesRequestFailed: "Could not load open issues.",
+    issuesDue: "Due",
+    issuesParent: "Parent",
+    issuesUpdated: "Updated",
     dismissNotice: "Dismiss message",
     save: "Save",
     saveAndClose: "Save/Close",
@@ -273,6 +291,7 @@ function closeTicketDropdown() {
 }
 
 function rerenderLocalizedDynamicContent() {
+  renderIssues();
   if (state.isConnected) {
     renderWorklogs(state.worklogs);
   }
@@ -651,25 +670,27 @@ async function loadState() {
 }
 
 async function saveSettings() {
+  const previous = state.settings;
   state.settings = {
     ...state.settings,
     jiraHost: jiraTenantHost($("jiraHost").value),
     jiraEmail: $("jiraEmail").value.trim(),
     jiraToken: $("jiraToken").value.trim()
   };
-  await storage.set({ settings: state.settings });
+  const changed = ["jiraHost", "jiraEmail", "jiraToken"].some(key => previous[key] !== state.settings[key]);
+  if (changed) issuesCache = null;
+  await storage.set(changed ? { settings: state.settings, issuesCache: null } : { settings: state.settings });
   applyTheme();
   applyLanguage();
 
   const connected = await testLogin(false);
   if (connected) {
-    setPage("worklogs");
     await loadWorklogs();
   }
 }
 
 function setPage(pageName) {
-  if (pageName === "worklogs" && !state.isConnected) {
+  if (["worklogs", "issues"].includes(pageName) && !state.isConnected) {
     pageName = "settings";
   }
 
@@ -680,6 +701,8 @@ function setPage(pageName) {
 }
 
 function updateNavigation() {
+  $("tabIssues").classList.toggle("hidden", !state.isConnected);
+  $("pageIssues").classList.toggle("hidden", !state.isConnected);
   const worklogTab = document.querySelector('[data-page="worklogs"]');
   const worklogPage = $("pageWorklogs");
 
@@ -696,6 +719,58 @@ function updateNavigation() {
 
   worklogTab.classList.remove("hidden");
   worklogPage.classList.remove("hidden");
+}
+
+function renderIssues() {
+  const cache = issuesCache?.host === state.settings.jiraHost && issuesCache.email === state.settings.jiraEmail ? issuesCache : null;
+  const issues = cache?.issues ?? [];
+  const notice = $("issuesNotice");
+  const error = cache?.error;
+  if (dismissedIssuesNotice !== error) dismissedIssuesNotice = undefined;
+  notice.classList.toggle("hidden", !error || dismissedIssuesNotice === error);
+  notice.textContent = error ? [t("issuesRequestFailed"), error.startsWith("HTTP ") ? error : ""].filter(Boolean).join(" ") : "";
+  $("issueCount").textContent = cache?.updatedAt ? issues.length : "–";
+  const locale = getLanguage();
+  const timestamp = new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "medium" });
+  $("issuesUpdated").textContent = cache?.updatedAt ? `${t("issuesUpdated")}: ${timestamp.format(cache.updatedAt)}` : "";
+  const list = $("issuesList");
+  list.replaceChildren();
+  if (!issues.length) {
+    if (!error) {
+      const empty = document.createElement("div");
+      empty.className = "notice";
+      empty.textContent = t(cache?.updatedAt ? "noOpenIssues" : "issuesLoading");
+      list.append(empty);
+    }
+    return;
+  }
+  const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+  for (const issue of issues) {
+    const card = document.createElement("article");
+    card.className = "worklog-card issue-card";
+    const title = document.createElement("h2");
+    const link = document.createElement("a");
+    link.href = `${normalizeHost(state.settings.jiraHost)}/browse/${encodeURIComponent(issue.key)}`;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = `${issue.key} · ${issue.summary ?? ""}`;
+    title.append(link);
+    const meta = document.createElement("div");
+    meta.className = "issue-meta";
+    const due = Date.parse(`${issue.dueDate}T12:00:00`);
+    meta.textContent = [issue.type, issue.status, issue.priority, Number.isFinite(due) ? `${t("issuesDue")}: ${date.format(due)}` : ""].filter(Boolean).join(" · ");
+    card.append(title, meta);
+    if (issue.parent?.key) {
+      const parent = document.createElement("div");
+      parent.className = "issue-meta";
+      const parentLink = link.cloneNode(false);
+      parentLink.href = `${normalizeHost(state.settings.jiraHost)}/browse/${encodeURIComponent(issue.parent.key)}`;
+      parentLink.textContent = [issue.parent.key, issue.parent.summary].filter(Boolean).join(" · ");
+      parent.append(`${t("issuesParent")}: `, parentLink);
+      card.append(parent);
+    }
+    list.append(card);
+  }
 }
 
 async function testLogin(showResult = true) {
@@ -1135,6 +1210,10 @@ async function updateWorklog(closeDialogAfterSave = true) {
 }
 
 function setupEvents() {
+  document.querySelector('[data-dismiss="issuesNotice"]').addEventListener("click", () => {
+    dismissedIssuesNotice = issuesCache?.error;
+    renderIssues();
+  });
   document.querySelector("[data-dismiss]").addEventListener("click", () => {
     dismissedNotice = $("notice").textContent;
     hideNotice();
@@ -1294,8 +1373,15 @@ function setupEvents() {
 
 async function init() {
   await loadState();
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.issuesCache) {
+      issuesCache = changes.issuesCache.newValue;
+      renderIssues();
+    }
+  });
+  ({ issuesCache } = await storage.get("issuesCache"));
   const session = await chrome.storage.session.get("selectedPage");
-  if (["worklogs", "settings", "info"].includes(session.selectedPage)) {
+  if (["worklogs", "issues", "settings", "info"].includes(session.selectedPage)) {
     selectedPage = session.selectedPage;
   }
   applyTheme();
@@ -1306,8 +1392,9 @@ async function init() {
 
   if (hasCredentials()) {
     const connected = await testLogin(false);
-    setPage(selectedPage ?? (connected ? "worklogs" : "settings"));
+    setPage(selectedPage ?? "settings");
     if (connected) {
+      chrome.runtime.sendMessage({ action: "refreshIssues" }).catch(console.error);
       await loadWorklogs();
     }
   }

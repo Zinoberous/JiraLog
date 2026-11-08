@@ -20,6 +20,9 @@
         </div>
       </div>
       <nav class="tabs" aria-label="Navigation">
+        <button id="tabIssues" class="tab" data-page="issues" type="button" data-i18n-title="myIssues" title="My issues" aria-label="My issues">
+          <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2v2H3zm4 0h14v2H7zM3 11h2v2H3zm4 0h14v2H7zM3 17h2v2H3zm4 0h14v2H7z" /></svg>
+        </button>
         <button id="tabWorklogs" class="tab" data-page="worklogs" title="Worklogs" aria-label="Worklogs"><svg class="mi"
             viewBox="0 0 24 24" aria-hidden="true">
             <use href="#mi-schedule" />
@@ -57,6 +60,20 @@
           <button type="button" class="notice-close" data-dismiss="notice" data-i18n-title="dismissNotice" aria-label="Dismiss message">×</button>
         </div>
         <div id="worklogList" class="worklog-list"></div>
+      </section>
+
+      <section id="pageIssues" class="page">
+        <div class="toolbar">
+          <div class="issues-summary"><strong id="issueCount">–</strong><span data-i18n="openIssues">Open issues</span></div>
+        </div>
+        <div class="notice-wrap">
+          <div id="issuesNotice" class="notice hidden" role="status"></div>
+          <button type="button" class="notice-close" data-dismiss="issuesNotice" data-i18n-title="dismissNotice" aria-label="Dismiss message">×</button>
+        </div>
+        <div id="issuesList" class="worklog-list"></div>
+        <div class="issues-updated">
+          <span id="issuesUpdated"></span><span class="issues-sync-indicator" aria-hidden="true">↻</span>
+        </div>
       </section>
 
       <section id="pageSettings" class="page">

@@ -14,6 +14,8 @@ The extension helps you document Jira worklogs for a selected day without repeat
 - Create worklogs from a modal dialog
 - Searchable issue dropdown
 - Default issue suggestions for assigned, unresolved issues
+- **My issues** lists tickets assigned to you outside the Done status category, with status, priority, due date when available, and a link to Jira.
+- The toolbar badge counts these tickets. Background refresh runs about every five minutes, including while the popup is closed.
 - Pin frequently used issues for quick access
 - Light and dark theme support
 - System theme detection
@@ -64,7 +66,7 @@ Use the following credentials in the extension settings:
 
 ## Permissions
 
-The extension stores settings (including the API token), the selected day and pinned issues in the local browser profile. Token storage is not encrypted by the extension.
+The extension stores settings (including the API token), the selected day, pinned issues and the latest assigned-ticket snapshot in the local browser profile. Token storage is not encrypted by the extension. The alarms permission schedules ticket refreshes.
 
 Jira API requests go to the configured Jira host. The optional search Easter egg loads an external GIF from `i.gifer.com`.
 

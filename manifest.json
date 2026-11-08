@@ -20,8 +20,10 @@
     "128": "icons/icon128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
+  "background": { "service_worker": "background.js" },
   "host_permissions": [
     "https://*/*",
     "http://localhost/*",
