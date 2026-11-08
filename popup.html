@@ -52,7 +52,10 @@
           <div class="total-time"><span data-i18n="total">Total</span>: <strong id="totalTime">00:00</strong></div>
         </div>
 
-        <div id="notice" class="notice hidden"></div>
+        <div class="notice-wrap">
+          <div id="notice" class="notice hidden"></div>
+          <button type="button" class="notice-close" data-dismiss="notice" data-i18n-title="dismissNotice" aria-label="Dismiss message">×</button>
+        </div>
         <div id="worklogList" class="worklog-list"></div>
       </section>
 
@@ -61,7 +64,7 @@
           <form id="settingsForm" class="card form-grid settings-card">
             <h2 data-i18n="jiraAccess">Access</h2>
             <label>
-              <span data-i18n="hostLabel">Atlassian company</span>
+              <span data-i18n="hostLabel">Host</span>
               <span class="host-input"><span aria-hidden="true">https://</span><input id="jiraHost" type="text"
                   placeholder="your-company" pattern="[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?"
                   maxlength="63" autocomplete="organization" required /><span aria-hidden="true">.atlassian.net</span></span>
@@ -70,10 +73,10 @@
               <span>Email</span>
               <input id="jiraEmail" type="email" autocomplete="username" required />
             </label>
-            <label>
-              <span>API-Token</span>
+            <div class="token-field">
+              <label for="jiraToken"><a class="token-link" href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener noreferrer" data-i18n="tokenLabel">API-Token</a></label>
               <input id="jiraToken" type="password" autocomplete="current-password" required />
-            </label>
+            </div>
             <div class="button-row">
               <button class="primary-button" type="submit" data-i18n="saveAccess">Save Access</button>
             </div>

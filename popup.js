@@ -1,4 +1,5 @@
 const storage = chrome.storage.local;
+let selectedPage;
 
 const defaults = {
   settings: {
@@ -36,7 +37,9 @@ const i18n = {
     preferences: "Darstellung und Sprache",
     theme: "Theme",
     language: "Sprache",
-    hostLabel: "Atlassian-Unternehmen",
+    hostLabel: "Host",
+    tokenLabel: "API-Token",
+    dismissNotice: "Meldung schließen",
     save: "Speichern",
     saveAndClose: "Speichern/Schließen",
     createWorklog: "Worklog erstellen",
@@ -81,7 +84,9 @@ const i18n = {
     preferences: "Preferences",
     theme: "Theme",
     language: "Language",
-    hostLabel: "Atlassian company",
+    hostLabel: "Host",
+    tokenLabel: "API token",
+    dismissNotice: "Dismiss message",
     save: "Save",
     saveAndClose: "Save/Close",
     createWorklog: "Create worklog",
@@ -318,7 +323,7 @@ function normalizeHost(host) {
 function jiraTenantHost(value) {
   const tenant = value.trim();
   if (tenant.length > 63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(tenant)) {
-    throw new Error("Bitte nur den Atlassian-Unternehmensnamen angeben (z. B. your-company).");
+    throw new Error("Bitte nur die Subdomain angeben (z. B. your-company).");
   }
   return `https://${tenant.toLowerCase()}.atlassian.net`;
 }
@@ -380,10 +385,12 @@ async function jiraSearch(jql, fields, maxResults = 50) {
   });
 }
 
+let dismissedNotice;
 function showNotice(message, isError = false) {
   const notice = $("notice");
+  if (dismissedNotice !== message) dismissedNotice = undefined;
   notice.textContent = message;
-  notice.classList.remove("hidden");
+  notice.classList.toggle("hidden", dismissedNotice === message);
   notice.style.borderColor = isError ? "var(--danger)" : "var(--border)";
 }
 
@@ -1128,8 +1135,16 @@ async function updateWorklog(closeDialogAfterSave = true) {
 }
 
 function setupEvents() {
+  document.querySelector("[data-dismiss]").addEventListener("click", () => {
+    dismissedNotice = $("notice").textContent;
+    hideNotice();
+  });
   document.querySelectorAll(".tab").forEach(tab => {
-    tab.addEventListener("click", () => setPage(tab.dataset.page));
+    tab.addEventListener("click", () => {
+      selectedPage = tab.dataset.page;
+      setPage(selectedPage);
+      chrome.storage.session.set({ selectedPage }).catch(console.error);
+    });
   });
 
   let logoClickCount = 0;
@@ -1279,21 +1294,22 @@ function setupEvents() {
 
 async function init() {
   await loadState();
+  const session = await chrome.storage.session.get("selectedPage");
+  if (["worklogs", "settings", "info"].includes(session.selectedPage)) {
+    selectedPage = session.selectedPage;
+  }
   applyTheme();
   applyLanguage();
   setupEvents();
   updateNavigation();
+  setPage(selectedPage ?? "settings");
 
   if (hasCredentials()) {
     const connected = await testLogin(false);
+    setPage(selectedPage ?? (connected ? "worklogs" : "settings"));
     if (connected) {
-      setPage("worklogs");
       await loadWorklogs();
-    } else {
-      setPage("settings");
     }
-  } else {
-    setPage("settings");
   }
 }
 

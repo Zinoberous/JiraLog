@@ -889,6 +889,17 @@ label>span {
   display: block;
 }
 
+.token-field {
+  display: grid;
+  gap: 5px;
+}
+
+.token-link {
+  width: fit-content;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .info-link:hover {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-color: var(--accent);
@@ -950,3 +961,8 @@ label>span {
     grid-template-columns: 1fr;
   }
 }
+.notice-wrap { position: relative; }
+.notice-wrap > .notice { padding-inline-end: 40px; overflow-wrap: anywhere; }
+.notice-close { position: absolute; inset-block-start: 4px; inset-inline-end: 5px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: inherit; font-size: 19px; line-height: 1; }
+.notice-close:hover { background: var(--surface-2); }
+.notice.hidden + .notice-close, .notice[hidden] + .notice-close { display: none; }

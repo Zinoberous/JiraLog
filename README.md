@@ -4,9 +4,9 @@ A lightweight browser extension for fast, day-based Jira worklog tracking.
 
 The extension helps you document Jira worklogs for a selected day without repeatedly navigating through Jira issue pages.
 
-## Features
+## Features (1.0.0)
 
-- Jira Cloud login with Atlassian company name, email address, and API token
+- Jira Cloud login with Host, email address, and API token
 - Day-based worklog dashboard
 - Total tracked time for the selected day
 - Worklog list with issue key, title, status, Jira link, duration, comment, and delete action
@@ -23,7 +23,7 @@ The extension helps you document Jira worklogs for a selected day without repeat
 
 ## Jira API Compatibility
 
-Enter only the Atlassian company name in the host field (for example, `example` for `https://example.atlassian.net`).
+Enter only the subdomain in the Host field (for example, `example` for `https://example.atlassian.net`).
 
 The extension targets Jira Cloud REST API v3 and uses the current search endpoint:
 
@@ -58,15 +58,15 @@ Create a Jira API token in your Atlassian account security settings.
 
 Use the following credentials in the extension settings:
 
-- Atlassian company name, for example `your-company` for `https://your-company.atlassian.net`
+- Host, for example `your-company` for `https://your-company.atlassian.net`
 - Jira account email address
 - Jira API token
 
 ## Permissions
 
-The extension uses browser storage to save settings and pinned issues locally.
+The extension stores settings (including the API token), the selected day and pinned issues in the local browser profile. Token storage is not encrypted by the extension.
 
-No data is sent to third-party services. Requests are sent only to the configured Jira host.
+Jira API requests go to the configured Jira host. The optional search Easter egg loads an external GIF from `i.gifer.com`.
 
 ## International Open-Source Notes
 
